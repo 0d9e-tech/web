@@ -17,3 +17,5 @@ Friends & cool people = {
   Upir: upir.cz
   Vasek: vsq.cz
 }
+
+It updates automatically by pushing to master, yayy
