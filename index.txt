@@ -1,0 +1,19 @@
+U+0D9E
+======
+
+Members = {
+  Honza: honzuvkod.dev
+  Kubik: chamik.eu
+  Marek: mrms.cz
+  Marian: mariansam.eu
+  Matej: matej.0d9e.tech
+  Prokop: rdck.dev
+}
+
+Friends & cool people = {
+  Honza: blackblog.cz
+  Medved: mj.ucw.cz
+  Tom: slama.dev
+  Upir: upir.cz
+  Vasek: vsq.cz
+}
