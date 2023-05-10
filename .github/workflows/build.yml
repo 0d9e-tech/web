@@ -24,3 +24,7 @@ jobs:
         with:
           push: true
           tags: ghcr.io/0d9e-tech/web:latest
+
+      - name: Deploy
+        run: |
+          curl https://0d9e.tech/deploy -X POST -H "x-token: ${{ secrets.DEPLOY_TOKEN }}"
