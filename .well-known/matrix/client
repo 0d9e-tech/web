@@ -1,0 +1,5 @@
+{
+    "m.homeserver": {
+        "base_url": "https://matrix.0d9e.tech"
+    }
+}
