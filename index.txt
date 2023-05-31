@@ -24,4 +24,6 @@ Friends & cool people = {
   Vasek: vsq.cz
 }
 
-It updates automatically by pushing to master, yayy
+Business partners = {
+  Radeksoft: radeksoft.cz
+}
