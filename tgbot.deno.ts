@@ -23,7 +23,7 @@ const randomToken = btoa(
   .replaceAll("+", "-")
   .replaceAll("=", "");
 
-const DOMAIN = "93f4-78-128-191-42.ngrok-free.app";
+const DOMAIN = "0d9e.tech";
 
 await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
   method: "POST",
