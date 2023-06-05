@@ -4,7 +4,7 @@ WORKDIR /app
 
 USER deno
 
-COPY server.deno.ts index.txt .
+COPY server.deno.ts index.txt tgbot.deno.ts .
 COPY .well-known .well-known
 COPY dl dl
 
