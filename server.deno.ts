@@ -1,6 +1,15 @@
+import {
+  handleRequest as handleTgRequest,
+  webhookPath as tgWebhookPath,
+} from "./tgbot.deno.ts";
+
 const content = new TextDecoder().decode(await Deno.readFile("index.txt"));
-const matrix_server = new TextDecoder().decode(await Deno.readFile("./.well-known/matrix/server"))
-const matrix_client = new TextDecoder().decode(await Deno.readFile("./.well-known/matrix/client"))
+const matrix_server = new TextDecoder().decode(
+  await Deno.readFile("./.well-known/matrix/server")
+);
+const matrix_client = new TextDecoder().decode(
+  await Deno.readFile("./.well-known/matrix/client")
+);
 
 async function handleHttp(conn: Deno.Conn) {
   for await (const e of Deno.serveHttp(conn)) {
@@ -20,8 +29,13 @@ async function handleEvent(e: Deno.RequestEvent) {
         headers: {
           "content-type": "text/plain",
         },
-      }),
+      })
     );
+    return;
+  }
+
+  if (url.pathname === tgWebhookPath) {
+    await handleTgRequest(e);
     return;
   }
 
@@ -32,7 +46,7 @@ async function handleEvent(e: Deno.RequestEvent) {
           "content-type": "application/json",
           "access-control-allow-origin": "*",
         },
-      }),
+      })
     );
     return;
   }
@@ -44,7 +58,7 @@ async function handleEvent(e: Deno.RequestEvent) {
           "content-type": "application/json",
           "access-control-allow-origin": "*",
         },
-      }),
+      })
     );
     return;
   }
@@ -55,6 +69,6 @@ async function handleEvent(e: Deno.RequestEvent) {
       headers: {
         "content-type": "text/plain",
       },
-    }),
+    })
   );
 }
