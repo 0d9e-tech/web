@@ -11,7 +11,7 @@ const randomToken = btoa(
   .replaceAll("+", "-")
   .replaceAll("=", "");
 
-export async function tgBotInit() {
+export async function init() {
   if (!token) {
     throw new Error("TG_BOT_TOKEN is not set");
   }
