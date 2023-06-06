@@ -1,20 +1,8 @@
 const token = Deno.env.get("TG_BOT_TOKEN");
-if (!token) {
-  throw new Error("TG_BOT_TOKEN is not set");
-}
-
-const manPages = await fetch(
-  "https://www.man7.org/linux/man-pages/dir_all_by_section.html"
-)
-  .then((r) => r.text())
-  .then((t) =>
-    t
-      .split("\n")
-      .filter((x) => x.startsWith('<a href="./man'))
-      .map((x) => x.split('"')[1].slice(2))
-  );
-
+const DOMAIN = "0d9e.tech";
 export const webhookPath = "/tg-webhook";
+
+let manPages: string[];
 
 const randomToken = btoa(
   String.fromCharCode(...crypto.getRandomValues(new Uint8Array(96)))
@@ -23,30 +11,45 @@ const randomToken = btoa(
   .replaceAll("+", "-")
   .replaceAll("=", "");
 
-const DOMAIN = "0d9e.tech";
+export async function tgBotInit() {
+  if (!token) {
+    throw new Error("TG_BOT_TOKEN is not set");
+  }
 
-await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    url: `https://${DOMAIN}${webhookPath}`,
-    secret_token: randomToken,
-    allowed_updates: ["message"],
-  }),
-});
+  manPages = await fetch(
+    "https://www.man7.org/linux/man-pages/dir_all_by_section.html"
+  )
+    .then((r) => r.text())
+    .then((t) =>
+      t
+        .split("\n")
+        .filter((x) => x.startsWith('<a href="./man'))
+        .map((x) => x.split('"')[1].slice(2))
+    );
 
-await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    chat_id: -1001639155811,
-    text: `Bot started, index of ${manPages.length} man pages loaded`,
-  }),
-});
+  await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      url: `https://${DOMAIN}${webhookPath}`,
+      secret_token: randomToken,
+      allowed_updates: ["message"],
+    }),
+  });
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: -1001639155811,
+      text: `Bot started, index of ${manPages.length} man pages loaded`,
+    }),
+  });
+}
 
 export async function handleRequest(e: Deno.RequestEvent) {
   if (
@@ -66,15 +69,20 @@ export async function handleRequest(e: Deno.RequestEvent) {
 
   const data = await e.request.json();
 
-  await e.respondWith(
-    new Response("processing", {
-      status: 200,
-      headers: {
-        "Content-Type": "text/plain",
-      },
-    })
-  );
+  await Promise.all([
+    e.respondWith(
+      new Response("processing", {
+        status: 200,
+        headers: {
+          "Content-Type": "text/plain",
+        },
+      })
+    ),
+    processTgUpdate(data),
+  ]);
+}
 
+async function processTgUpdate(data: any) {
   const text = data?.message?.text;
   if (typeof text !== "string") {
     console.log("no text", data);
