@@ -1,7 +1,7 @@
 import { serveDir } from "https://deno.land/std@0.190.0/http/file_server.ts";
 import {
   handleRequest as handleTgRequest,
-  tgBotInit,
+  init as tgBotInit,
   webhookPath as tgWebhookPath,
 } from "./tgbot.deno.ts";
 
@@ -14,10 +14,6 @@ async function handleHttp(conn: Deno.Conn) {
       await e.respondWith(response);
     }
   }
-}
-
-for await (const conn of Deno.listen({ port: 8000 })) {
-  handleHttp(conn);
 }
 
 async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
