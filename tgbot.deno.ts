@@ -103,7 +103,6 @@ async function processTgUpdate(data: any) {
           "AgACAgQAAxkBAAMDZH5DU3pz0Hq3pANQf1IIdUTGScsAAmu7MRvY1khTtdfPHQH6mQIBAAMCAAN5AAMvBA",
       }),
     });
-    return;
   }
 
   const manMatch = text.match(/^\s*man\s*([1-8])?\s*([a-z-_+.]+)\s*$/i);
@@ -129,6 +128,21 @@ async function processTgUpdate(data: any) {
         text,
       }),
     });
-    return;
+  }
+
+  if (
+    text.toLowerCase().includes("rust") ||
+    text.toLowerCase().includes("růst")
+  ) {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: data.message.chat.id,
+        text: Math.random() > 0.5 ? "⚡" : "🦀",
+      }),
+    });
   }
 }
