@@ -145,4 +145,17 @@ async function processTgUpdate(data: any) {
       }),
     });
   }
+
+  if (text.toLowerCase().includes("sus")) {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: data.message.chat.id,
+        text: "ඞ",
+      }),
+    });
+  }
 }
