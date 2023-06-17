@@ -1,6 +1,7 @@
 import { serveDir } from "https://deno.land/std@0.190.0/http/file_server.ts";
 import {
   handleRequest as handleTgRequest,
+  handleTgWeb,
   init as tgBotInit,
   webhookPath as tgWebhookPath,
 } from "./tgbot.deno.ts";
@@ -9,10 +10,13 @@ const indexContent = new TextDecoder().decode(await Deno.readFile("index.txt"));
 
 async function handleHttp(conn: Deno.Conn) {
   for await (const e of Deno.serveHttp(conn)) {
-    const response = await handleEvent(e);
-    if (response !== null) {
-      await e.respondWith(response);
-    }
+    handleEvent(e)
+      .then(async (response) => {
+        if (response !== null) {
+          await e.respondWith(response);
+        }
+      })
+      .catch((err) => console.error(err));
   }
 }
 
@@ -39,6 +43,10 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
     return null;
   }
 
+  if (url.pathname.startsWith("/tgweb/")) {
+    return await handleTgWeb(e);
+  }
+
   const resp = await serveDir(e.request, { fsRoot: "static" });
   if (resp.status !== 200)
     return new Response("Yo mama so fat she ate this page (404 Not Found)", {
@@ -59,4 +67,5 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
 
 if (Deno.env.get("PRODUCTION") === "true") await tgBotInit();
 
-for await (const conn of Deno.listen({ port: 8000 })) handleHttp(conn);
+for await (const conn of Deno.listen({ port: 8000 }))
+  handleHttp(conn).catch((err) => console.error(err));
