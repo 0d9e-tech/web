@@ -90,19 +90,33 @@ async function processTgUpdate(data: any) {
   }
 
   if (text.toLowerCase().includes("haha sex")) {
-    await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chat_id: data.message.chat.id,
-        reply_to_message_id: data.message.message_id,
-        protect_content: true,
-        photo:
-          "AgACAgQAAxkBAAMDZH5DU3pz0Hq3pANQf1IIdUTGScsAAmu7MRvY1khTtdfPHQH6mQIBAAMCAAN5AAMvBA",
-      }),
-    });
+    if (data.message.from.id === 656461353) {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: data.message.chat.id,
+          reply_to_message_id: data.message.message_id,
+          text: "No sex :(",
+        }),
+      });
+    } else {
+      await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: data.message.chat.id,
+          reply_to_message_id: data.message.message_id,
+          protect_content: true,
+          photo:
+            "AgACAgQAAxkBAAMDZH5DU3pz0Hq3pANQf1IIdUTGScsAAmu7MRvY1khTtdfPHQH6mQIBAAMCAAN5AAMvBA",
+        }),
+      });
+    }
   }
 
   const manMatch = text.match(/^\s*man\s*([1-8])?\s*([a-z-_+.]+)\s*$/i);
