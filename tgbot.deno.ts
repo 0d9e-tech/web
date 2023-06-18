@@ -295,12 +295,13 @@ async function reportProcessResult(
   const outPath = `${tempDir}/${id}.out`;
   const stat = await outFile.stat();
   outFile.close();
-  const mime = decoder.decode(
-    await Deno.run({
-      cmd: ["file", "-ib", outPath],
-      stdout: "piped",
-    }).output()
-  );
+  const fileProc = Deno.run({
+    cmd: ["file", "-ib", outPath],
+    stdout: "piped",
+  });
+  // need to await the status to not create zombie processes
+  await fileProc.status();
+  const mime = decoder.decode(await fileProc.output());
   contentTypes.set(id, mime);
   const isText =
     mime.startsWith("text/") || mime.startsWith("application/json");
