@@ -260,7 +260,6 @@ async function handleSh(data: any, cmd: string) {
       }),
     }
   ).then((x) => x.json());
-  console.log(progressMessageResponse);
 
   const status = await proc.status();
   runningProcesses.delete(id);
@@ -341,8 +340,15 @@ async function reportProcessResult(
 
 async function handleCallbackQuery(data: any) {
   const cbData = data.callback_query.data;
-  if (cbData.startsWith("kill:"))
-    runningProcesses.get(cbData.slice(5))?.kill("SIGKILL");
+  if (cbData.startsWith("kill:")) {
+    const proc = runningProcesses.get(cbData.slice(5));
+    if (proc === undefined) return;
+    const killProc = Deno.run({
+      cmd: ["rkill", "-9", proc.pid.toString()],
+    });
+    await killProc.status();
+    return;
+  }
 }
 
 export async function handleTgWeb(
