@@ -207,7 +207,7 @@ async function processTgUpdate(data: any) {
 
 const decoder = new TextDecoder("utf8");
 
-const LOGO_TEMPLATE = await Deno.readTextFile("./logo.svg");
+const LOGO_TEMPLATE = await Deno.readTextFile("./static/logo.svg");
 
 async function handleLogo(data: any, text: string) {
   const filename = text.trim().replaceAll(/[^a-z0-9_-]/gi, "--");
