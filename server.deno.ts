@@ -10,10 +10,26 @@ const indexContent = new TextDecoder().decode(await Deno.readFile("index.txt"));
 
 async function handleHttp(conn: Deno.Conn) {
   for await (const e of Deno.serveHttp(conn)) {
-    handleEvent(e)
+    const start = performance.now();
+
+    const mockEvent: Deno.RequestEvent = {
+      request: e.request,
+      async respondWith(r) {
+        const resp = await r;
+        const end = performance.now();
+        console.log(
+          `${new Date().toISOString()} ${resp.status} ${e.request.method} ${
+            e.request.url
+          } ${(end - start).toFixed(1)}ms`
+        );
+        return await e.respondWith(resp);
+      },
+    };
+
+    handleEvent(mockEvent)
       .then(async (response) => {
         if (response !== null) {
-          await e.respondWith(response);
+          await mockEvent.respondWith(response);
         }
       })
       .catch((err) => console.error(err));
@@ -47,14 +63,17 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
     return await handleTgWeb(e);
   }
 
-  const resp = await serveDir(e.request, { fsRoot: "static" });
-  if (resp.status !== 200)
+  const resp = await serveDir(e.request, { fsRoot: "static", quiet: true });
+  if (![200, 304].includes(resp.status)) {
+    if (resp.status !== 404) console.error(resp);
+
     return new Response("Yo mama so fat she ate this page (404 Not Found)", {
       status: 404,
       headers: {
         "content-type": "text/plain",
       },
     });
+  }
 
   if (url.pathname.startsWith("/.well-known/matrix/")) {
     resp.headers.set("Access-Control-Allow-Origin", "*");
