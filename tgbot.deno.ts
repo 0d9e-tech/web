@@ -2,7 +2,6 @@ const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN");
 export const webhookPath = "/tg-webhook";
-import { Resvg } from "npm:@resvg/resvg-js";
 
 function genRandomToken(bytes: number) {
   return btoa(
@@ -213,16 +212,16 @@ async function handleLogo(data: any, text: string) {
   const filename = text.trim().replaceAll(/[^a-z0-9_-]/gi, "--");
   const texted = LOGO_TEMPLATE.replace("TEMPLATETEXT", text.trim());
   await Deno.writeTextFile(`./static/logos/${filename}.svg`, texted);
-  const opts = {
-    fitTo: {
-      mode: "width" as const,
-      value: 500,
-    },
-  };
-  const resvg = new Resvg(texted, opts);
-  const pngData = resvg.render();
-  const pngBuffer = pngData.asPng();
-  await Deno.writeFile(`./static/logos/${filename}.png`, pngBuffer);
+  await Deno.run({
+    cmd: [
+      "inkscape",
+      `./static/logos/${filename}.svg`,
+      "-o",
+      `./static/logos/${filename}.png`,
+      "-w",
+      "500",
+    ],
+  }).status();
   await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
     method: "POST",
     headers: {
