@@ -1,0 +1,12 @@
+##
+## Very sus cow
+##
+$the_cow = <<EOC;
+  $thoughts
+    $thoughts
+      \/-----\\
+      +--+  |-\\
+      +--+  | |
+      |  _  |_/
+      \\_/ \\_/
+EOC
