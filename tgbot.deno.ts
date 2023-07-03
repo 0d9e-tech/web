@@ -2,6 +2,7 @@ const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN");
 export const webhookPath = "/tg-webhook";
+import { Resvg } from 'npm:@resvg/resvg-js'
 
 function genRandomToken(bytes: number) {
   return btoa(
@@ -145,6 +146,11 @@ async function processTgUpdate(data: any) {
     }
   }
 
+  if (text.startsWith("/logo ") && data.message.chat.id === MAIN_CHAT_ID) {
+    const text = text.slice(6);
+    handleLogo(data, text.slice(4));
+  }
+
   const manMatch = text.match(/^\s*man\s*([1-8])?\s*([a-z-_+.]+)\s*$/i);
   if (manMatch !== null) {
     const key =
@@ -201,6 +207,36 @@ async function processTgUpdate(data: any) {
 }
 
 const decoder = new TextDecoder("utf8");
+
+async function handleLogo(data: any, text: string) {
+	const template = await Deno.readTextFile("./logo.svg");
+	const filename = text.trim().replaceAll(" ", "_") .replaceAll("/", "_");
+	const texted = template.replace("TEMPLATETEXT", text.trim())
+	await Deno.writeFile(`./logos/${filename}.svg`, texted)
+	const opts = {
+		fitTo: {
+			mode: 'width',
+			value: 500,
+		},
+	}
+	const resvg = new Resvg(texted, opts)
+	const pngData = resvg.render()
+	const pngBuffer = pngData.asPng()
+	await Deno.writeFile(`./logos/${filename}.png`, pngBuffer)
+	await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			chat_id: data.message.chat.id,
+			reply_to_message_id: data.message.message_id,
+			protect_content: true,
+			photo: `https://tech.0d9e/logos/${filename}.png`,
+			caption: `https://tech.0d9e/logos/${filename}.svg`
+		}),
+	});
+}
 
 async function handleSh(data: any, cmd: string) {
   const id = genRandomToken(32);
