@@ -98,7 +98,7 @@ async function processTgUpdate(data: any) {
     return await handleCallbackQuery(data);
   }
 
-  const text = data?.message?.text;
+  const text = data?.message?.text ?? data?.message?.caption;
   if (typeof text !== "string") {
     console.log("no text", data);
     return;
@@ -209,7 +209,10 @@ const decoder = new TextDecoder("utf8");
 const LOGO_TEMPLATE = await Deno.readTextFile("./static/logo.svg");
 
 async function handleLogo(data: any, text: string) {
-  const filename = text.trim().replaceAll(" ", "_").replaceAll(/[^a-z0-9_-]/gi, "--");
+  const filename = text
+    .trim()
+    .replaceAll(" ", "_")
+    .replaceAll(/[^a-z0-9_-]/gi, "--");
   const texted = LOGO_TEMPLATE.replace("TEMPLATETEXT", text.trim());
   await Deno.writeTextFile(`./static/logos/${filename}.svg`, texted);
   await Deno.run({
@@ -346,12 +349,9 @@ async function reportProcessResult(
       .replaceAll("\\", "\\\\")
       .replaceAll("`", "\\`");
     if (res.at(-1) !== "\n") res += "\n";
-    text =
-      `[Exit code ${exitCode}](https://${DOMAIN}/tgweb/${id})\n` +
-      "```\n" +
-      res +
-      "```\n" +
-      `Set Content\\-Type with \`/settype ${id} mime/type\``;
+    text = "```\n" + res + "```";
+    if (exitCode !== 0)
+      text = `[Exit code ${exitCode}](https://${DOMAIN}/tgweb/${id})\n` + text;
   } else
     text =
       "[" +
