@@ -46,7 +46,7 @@ export async function init() {
     body: JSON.stringify({
       url: `https://${DOMAIN}${webhookPath}`,
       secret_token: webhookUrlToken,
-      allowed_updates: ["message", "callback_query"],
+      allowed_updates: ["message", "callback_query", "inline_query"],
     }),
   });
 
@@ -94,9 +94,8 @@ export async function handleRequest(e: Deno.RequestEvent) {
 }
 
 async function processTgUpdate(data: any) {
-  if ("callback_query" in data) {
-    return await handleCallbackQuery(data);
-  }
+  if ("callback_query" in data) return await handleCallbackQuery(data);
+  if ("inline_query" in data) return await handleInlineQuery(data);
 
   const text = data?.message?.text ?? data?.message?.caption;
   if (typeof text !== "string") {
@@ -207,36 +206,44 @@ async function processTgUpdate(data: any) {
 const decoder = new TextDecoder("utf8");
 
 const LOGO_TEMPLATE = await Deno.readTextFile("./static/logo.svg");
+const LOGO_RENDER_SIZE = 500;
+
+async function generateLogos(text: string, filename: string) {
+  const texted = LOGO_TEMPLATE.replace("TEMPLATETEXT", text.trim());
+  await Deno.writeTextFile(`./static/logos/${filename}.svg`, texted);
+  return (
+    await Deno.run({
+      cmd: [
+        "inkscape",
+        `./static/logos/${filename}.svg`,
+        "-o",
+        `./static/logos/${filename}.png`,
+        "-w",
+        LOGO_RENDER_SIZE.toString(),
+      ],
+      stderr: "null",
+    }).status()
+  ).code;
+}
 
 async function handleLogo(data: any, text: string) {
   const filename = text
     .trim()
     .replaceAll(" ", "_")
     .replaceAll(/[^a-z0-9_-]/gi, "--");
-  const texted = LOGO_TEMPLATE.replace("TEMPLATETEXT", text.trim());
-  await Deno.writeTextFile(`./static/logos/${filename}.svg`, texted);
-  await Deno.run({
-    cmd: [
-      "inkscape",
-      `./static/logos/${filename}.svg`,
-      "-o",
-      `./static/logos/${filename}.png`,
-      "-w",
-      "500",
-    ],
-  }).status();
-  await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      chat_id: data.message.chat.id,
-      reply_to_message_id: data.message.message_id,
-      photo: `https://${DOMAIN}/logos/${filename}.png`,
-      caption: `https://${DOMAIN}/logos/${filename}.svg`,
-    }),
-  });
+  if ((await generateLogos(text, filename)) === 0)
+    await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: data.message.chat.id,
+        reply_to_message_id: data.message.message_id,
+        photo: `https://${DOMAIN}/logos/${filename}.png`,
+        caption: `https://${DOMAIN}/logos/${filename}.svg`,
+      }),
+    });
 }
 
 async function handleSh(data: any, cmd: string) {
@@ -401,4 +408,36 @@ export async function handleTgWeb(
   return new Response(file.readable, {
     headers: { "Content-Type": ct },
   });
+}
+
+let imageI = 0;
+async function handleInlineQuery(data: any) {
+  const { id: inline_query_id, query, from } = data.inline_query;
+  console.log(
+    `Logo from ${from.first_name} ${from.last_name} (@${from.username}): ${query}`
+  );
+  const id = imageI++;
+  const fn = `inline_query_${id}`;
+  if ((await generateLogos(query, fn)) === 0)
+    await fetch(`https://api.telegram.org/bot${token}/answerInlineQuery`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        inline_query_id,
+        results: [
+          {
+            type: "photo",
+            id: id.toString(),
+            photo_url: `https://${DOMAIN}/logos/${fn}.png`,
+            thumb_url: `https://${DOMAIN}/logos/${fn}.png`,
+            photo_width: LOGO_RENDER_SIZE.toString(),
+            photo_height: LOGO_RENDER_SIZE.toString(),
+            title: "Sus?",
+            caption: `https://${DOMAIN}/logos/${fn}.svg`,
+          },
+        ],
+      }),
+    });
 }
