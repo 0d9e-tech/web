@@ -1,39 +1,37 @@
- _____________________________________________________________ 
-/    ____      ______                                         \
-|   / __ \____/ / __ \___                                     |
-|  / / / / __  / /_/ / _ \                                    |
-| / /_/ / /_/ /\__, /  __/                                    |
-| \____/\__,_//____/\___/                                     |
-|                                                             |
-| Members = {                                                 |
-|   Honza: honzuvkod.dev                                      |
-|   Kubik: chamik.eu                                          |
-|   Marek: mrms.cz                                            |
-|   Marian: mariansam.eu                                      |
-|   Matej: matej.0d9e.tech                                    |
-|   Prokop: rdck.dev                                          |
-| }                                                           |
-|                                                             |
-| Friends & cool people = {                                   |
-|   Honza: blackblog.cz                                       |
-|   Medved: mj.ucw.cz                                         |
-|   Tom: slama.dev                                            |
-|   Upir: upir.cz                                             |
-|   Vasek: vsq.cz                                             |
-| }                                                           |
-|                                                             |
-| Logo = {                                                    |
-|   SVGv2: https://0d9e.tech/logo.svg                         |
-|   SVG: https://0d9e.tech/dl/0d9e-logo.svg                   |
-|   Keychain STL: https://0d9e.tech/dl/0d9e-logo.stl          |
-|   OpenSCAD source file: https://0d9e.tech/dl/0d9d-logo.scad |
-| }                                                           |
-|                                                             |
-| Business partners = {                                       |
-|   Radeksoft: radeksoft.cz                                   |
-| }                                                           |
-\                                                             /
- ------------------------------------------------------------- 
+ ___________________________________
+/    ____      ______               \
+|   / __ \____/ / __ \___           |
+|  / / / / __  / /_/ / _ \          |
+| / /_/ / /_/ /\__, /  __/          |
+| \____/\__,_//____/\___/           |
+|                                   |
+| Members = {                       |
+|   Honza: honzuvkod.dev            |
+|   Kubik: chamik.eu                |
+|   Marek: mrms.cz                  |
+|   Marian: mariansam.eu            |
+|   Matej: matej.0d9e.tech          |
+|   Prokop: rdck.dev                |
+| }                                 |
+|                                   |
+| Friends & cool people = {         |
+|   Honza: blackblog.cz             |
+|   Marie: maria.jmq.cz             |
+|   Medved: mj.ucw.cz               |
+|   Tom: slama.dev                  |
+|   Upir: upir.cz                   |
+|   Vasek: vsq.cz                   |
+| }                                 |
+|                                   |
+| Logo = {                          |
+|   SVG: https://0d9e.tech/logo.svg |
+| }                                 |
+|                                   |
+| Business partners = {             |
+|   Radeksoft: radeksoft.cz         |
+| }                                 |
+\                                   /
+ -----------------------------------
   \
     \
        _------_
