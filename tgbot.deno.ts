@@ -1,3 +1,5 @@
+import unidecode from "npm:unidecode";
+
 const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN");
@@ -210,14 +212,14 @@ const LOGO_RENDER_SIZE = 500;
 
 async function generateLogos(text: string, filename: string) {
   const texted = LOGO_TEMPLATE.replace("TEMPLATETEXT", text.trim());
-  await Deno.writeTextFile(`./static/logos/${filename}.svg`, texted);
+  await Deno.writeTextFile(`./static/persistent/logos/${filename}.svg`, texted);
   return (
     await Deno.run({
       cmd: [
         "inkscape",
-        `./static/logos/${filename}.svg`,
+        `./static/persistent/logos/${filename}.svg`,
         "-o",
-        `./static/logos/${filename}.png`,
+        `./static/persistent/logos/${filename}.png`,
         "-w",
         LOGO_RENDER_SIZE.toString(),
       ],
@@ -226,12 +228,15 @@ async function generateLogos(text: string, filename: string) {
   ).code;
 }
 
+function slugify(text: string) {
+  return (unidecode(text.trim()) as string)
+    .replaceAll(" ", "-")
+    .replaceAll(/[^a-z0-9_-]/gi, (x) => "0x" + x.charCodeAt(0).toString(16));
+}
+
 async function handleLogo(data: any, text: string) {
-  const filename = text
-    .trim()
-    .replaceAll(" ", "_")
-    .replaceAll(/[^a-z0-9_-]/gi, "--");
-  if ((await generateLogos(text, filename)) === 0)
+  const fn = `${slugify(text)}_${new Date().toISOString()}`;
+  if ((await generateLogos(text, fn)) === 0)
     await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
       method: "POST",
       headers: {
@@ -240,8 +245,8 @@ async function handleLogo(data: any, text: string) {
       body: JSON.stringify({
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
-        photo: `https://${DOMAIN}/logos/${filename}.png`,
-        caption: `https://${DOMAIN}/logos/${filename}.svg`,
+        photo: `https://${DOMAIN}/persistent/logos/${fn}.png`,
+        caption: `https://${DOMAIN}/persistent/logos/${fn}.svg`,
       }),
     });
 }
@@ -416,8 +421,7 @@ async function handleInlineQuery(data: any) {
   console.log(
     `Logo from ${from.first_name} ${from.last_name} (@${from.username}): ${query}`
   );
-  const id = imageI++;
-  const fn = `inline_query_${id}`;
+  const fn = `inline_${imageI++}_${slugify(query)}_${new Date().toISOString()}`;
   if ((await generateLogos(query, fn)) === 0)
     await fetch(`https://api.telegram.org/bot${token}/answerInlineQuery`, {
       method: "POST",
@@ -429,13 +433,13 @@ async function handleInlineQuery(data: any) {
         results: [
           {
             type: "photo",
-            id: id.toString(),
-            photo_url: `https://${DOMAIN}/logos/${fn}.png`,
-            thumb_url: `https://${DOMAIN}/logos/${fn}.png`,
+            id: "0",
+            photo_url: `https://${DOMAIN}/persistent/logos/${fn}.png`,
+            thumb_url: `https://${DOMAIN}/persistent/logos/${fn}.png`,
             photo_width: LOGO_RENDER_SIZE.toString(),
             photo_height: LOGO_RENDER_SIZE.toString(),
             title: "Sus?",
-            caption: `https://${DOMAIN}/logos/${fn}.svg`,
+            caption: `https://${DOMAIN}/persistent/logos/${fn}.svg`,
           },
         ],
       }),
