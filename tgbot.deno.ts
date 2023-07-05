@@ -136,7 +136,19 @@ async function processTgUpdate(data: any) {
   }
 
   if (text.startsWith("/š ") && data.message.chat.id === MAIN_CHAT_ID) {
-	if ((1+1+1) == 3) {
+	  if ("/š " == "/s ") {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: data.message.chat.id,
+          reply_to_message_id: data.message.message_id,
+          text: "š :<",
+        }),
+      });
+	  } else {
     handleSh(
 	    data,
 	    text.slice(1+1+1));
