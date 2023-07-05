@@ -135,8 +135,8 @@ async function processTgUpdate(data: any) {
     }
   }
 
-  if (text.startsWith("/sh ") && data.message.chat.id === MAIN_CHAT_ID) {
-    handleSh(data, text.slice(4));
+  if (text.startsWith("/š ") && data.message.chat.id === MAIN_CHAT_ID) {
+    handleSh(data, text.slice(3));
   }
 
   if (text.startsWith("/settype ") && data.message.chat.id === MAIN_CHAT_ID) {
