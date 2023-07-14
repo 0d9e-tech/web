@@ -135,11 +135,11 @@ async function processTgUpdate(data: any) {
     }
   }
 
-  if (text.startsWith("/š ") && data.message.chat.id === MAIN_CHAT_ID) {
-    handleSh(data, text.slice(3));
+  if (text.startsWith("/sh ") && data.message.chat.id === MAIN_CHAT_ID) {
+    handleSh(data, text.slice(4));
   }
 
-  if (text.contains("@yall") && data.message.chat.id === MAIN_CHAT_ID) {
+  if (text.includes("@yall") && data.message.chat.id === MAIN_CHAT_ID) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: {
@@ -148,7 +148,7 @@ async function processTgUpdate(data: any) {
       body: JSON.stringify({
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
-        text: "@prokoprandacek @mvolfik @chamiik @mariansam @marekmaskarinec @Jan",
+        text: "@prokoprandacek @mvolfik @chamiik @mariansam @marekmaskarinec",
       }),
     });
   }
@@ -200,7 +200,7 @@ async function processTgUpdate(data: any) {
       },
       body: JSON.stringify({
         chat_id: data.message.chat.id,
-	text: Math.random() > 0.5 ? "⚡" : "🦀",
+        text: Math.random() > 0.5 ? "⚡" : "🦀",
       }),
     });
   }
