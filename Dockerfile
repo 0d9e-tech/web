@@ -2,8 +2,6 @@ FROM denoland/deno:debian
 
 WORKDIR /app
 
-ENV PRODUCTION true
-
 RUN mkdir -p /usr/share/fonts/truetype/inconsolata
 COPY stuff/Inconsolata-Bold.otf /usr/share/fonts/truetype/inconsolata
 

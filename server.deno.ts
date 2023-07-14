@@ -84,7 +84,7 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
 
 ///////// MAIN /////////
 
-if (Deno.env.get("PRODUCTION") === "true") await tgBotInit();
+await tgBotInit();
 
 for await (const conn of Deno.listen({ port: 8000 }))
   handleHttp(conn).catch((err) => console.error(err));
