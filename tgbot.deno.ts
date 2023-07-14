@@ -136,21 +136,21 @@ async function processTgUpdate(data: any) {
   }
 
   if (text.startsWith("/š ") && data.message.chat.id === MAIN_CHAT_ID) {
-	  if (data.message.from.username === "mvolfik") {
-		  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-			  method: "POST",
-		  headers: {
-			  "Content-Type": "application/json",
-		  },
-		  body: JSON.stringify({
-			  chat_id: data.message.chat.id,
-			  reply_to_message_id: data.message.message_id,
-			  text: "no sex :<",
-		  }),
-		  });
-	  } else {
-		  handleSh( data, text.slice(3));
-	  }
+    handleSh(data, text.slice(3));
+  }
+
+  if (text.contains("@yall") && data.message.chat.id === MAIN_CHAT_ID) {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: data.message.chat.id,
+        reply_to_message_id: data.message.message_id,
+        text: "@prokoprandacek @mvolfik @chamiik @mariansam @marekmaskarinec @Jan",
+      }),
+    });
   }
 
   if (text.startsWith("/settype ") && data.message.chat.id === MAIN_CHAT_ID) {
@@ -200,7 +200,7 @@ async function processTgUpdate(data: any) {
       },
       body: JSON.stringify({
         chat_id: data.message.chat.id,
-        text: Math.random() > 0.5 ? "⚡" : "🦀",
+	text: Math.random() > 0.5 ? "⚡" : "🦀",
       }),
     });
   }
