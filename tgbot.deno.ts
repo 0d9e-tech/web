@@ -96,6 +96,7 @@ export async function handleRequest(e: Deno.RequestEvent) {
 }
 
 async function processTgUpdate(data: any) {
+  if (DOMAIN?.includes("ngrok")) console.log(data);
   if ("callback_query" in data) return await handleCallbackQuery(data);
   if ("inline_query" in data) return await handleInlineQuery(data);
 
@@ -148,7 +149,27 @@ async function processTgUpdate(data: any) {
       body: JSON.stringify({
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
-        text: "@prokoprandacek @mvolfik @chamiik @mariansam @marekmaskarinec",
+        parse_mode: "MarkdownV2",
+        text: await Deno.readTextFile("./static/persistent/yall.txt"),
+      }),
+    });
+  }
+
+  if (text === "/inspect") {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: data.message.chat.id,
+        reply_to_message_id: data.message.message_id,
+        parse_mode: "MarkdownV2",
+        text: `\`\`\`\n${JSON.stringify(
+          data.message.reply_to_message,
+          null,
+          2
+        )}\n\`\`\``,
       }),
     });
   }
