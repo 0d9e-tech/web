@@ -1,37 +1,43 @@
- _________________________________________________________
-/    ____      ______                                     \
-|   / __ \____/ / __ \___                                 |
-|  / / / / __  / /_/ / _ \                                |
-| / /_/ / /_/ /\__, /  __/                                |
-| \____/\__,_//____/\___/                                 |
-|                                                         |
-| Members = {                                             |
-|   Honza: honzuvkod.dev         @cloud:0d9e.tech         |
-|   Kubik: chamik.eu             @kubik:0d9e.tech         |
-|   Marek: mrms.cz               @mrms:0d9e.tech          |
-|   Marian: mariansam.eu         @mariansam:0d9e.tech     |
-|   Matej: matej.0d9e.tech       @matej:0d9e.tech         |
-|   Prokop: rdck.dev             @prokop:0d9e.tech        |
-| }                                                       |
-|                                                         |
-| Friends & cool people = {                               |
-|   Honza: blackblog.cz                                   |
-|   Marie: maria.jmq.cz                                   |
-|   Medved: mj.ucw.cz                                     |
-|   Tom: slama.dev                                        |
-|   Upir: upir.cz                                         |
-|   Vasek: vsq.cz                                         |
-| }                                                       |
-|                                                         |
-| Logo = {                                                |
-|   SVG: https://0d9e.tech/logo.svg                       |
-| }                                                       |
-|                                                         |
-| Business partners = {                                   |
-|   Radeksoft: radeksoft.cz                               |
-| }                                                       |
-\                                                         /
- ---------------------------------------------------------
+ ________________________________________
+/    ____      ______                    \
+|   / __ \____/ / __ \___                |
+|  / / / / __  / /_/ / _ \               |
+| / /_/ / /_/ /\__, /  __/               |
+| \____/\__,_//____/\___/                |
+|                                        |
+| Members = {                            |
+|   Honza: honzuvkod.dev                 |
+|          @cloud:0d9e.tech              |
+|   Kubik: chamik.eu                     |
+|          @kubik:0d9e.tech              |
+|   Marek: mrms.cz                       |
+|          @mrms:0d9e.tech               |
+|   Marian: mariansam.eu                 |
+|           @mariansam:0d9e.tech         |
+|   Matej: matej.0d9e.tech               |
+|          @matej:0d9e.tech              |
+|   Prokop: rdck.dev                     | 
+|           @prokop:0d9e.tech            |
+| }                                      |
+|                                        |
+| Friends & cool people = {              |
+|   Honza: blackblog.cz                  |
+|   Marie: maria.jmq.cz                  |
+|   Medved: mj.ucw.cz                    |
+|   Tom: slama.dev                       |
+|   Upir: upir.cz                        |
+|   Vasek: vsq.cz                        |
+| }                                      |
+|                                        |
+| Logo = {                               |
+|   SVG: https://0d9e.tech/logo.svg      |
+| }                                      |
+|                                        |
+| Business partners = {                  |
+|   Radeksoft: radeksoft.cz              |
+| }                                      |
+\                                        /
+ ----------------------------------------
   \
     \
        _------_
