@@ -13,7 +13,7 @@
 |   Marek: mrms.cz                       |
 |          @mrms:0d9e.tech               |
 |   Marian: mariansam.eu                 |
-|           @mariansam:0d9e.tech         |
+|           @marian:0d9e.tech            |
 |   Matej: matej.0d9e.tech               |
 |          @matej:0d9e.tech              |
 |   Prokop: rdck.dev                     | 
