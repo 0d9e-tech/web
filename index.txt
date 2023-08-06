@@ -6,18 +6,18 @@
 | \____/\__,_//____/\___/                |
 |                                        |
 | Members = {                            |
-|   Honza: honzuvkod.dev                 |
-|          @cloud:0d9e.tech              |
-|   Kubik: chamik.eu                     |
-|          @kubik:0d9e.tech              |
-|   Marek: mrms.cz                       |
-|          @mrms:0d9e.tech               |
+|   Honza:  honzuvkod.dev                |
+|            @cloud:0d9e.tech            |
+|   Kubik:  chamik.eu                    |
+|            @kubik:0d9e.tech            |
+|   Marek:  mrms.cz                      |
+|            @mrms:0d9e.tech             |
 |   Marian: mariansam.eu                 |
-|           @marian:0d9e.tech            |
-|   Matej: matej.0d9e.tech               |
-|          @matej:0d9e.tech              |
+|            @marian:0d9e.tech           |
+|   Matej:  matej.0d9e.tech              |
+|            @matej:0d9e.tech            |
 |   Prokop: rdck.dev                     | 
-|           @prokop:0d9e.tech            |
+|            @prokop:0d9e.tech           |
 | }                                      |
 |                                        |
 | Friends & cool people = {              |
