@@ -5,6 +5,8 @@
 | / /_/ / /_/ /\__, /  __/               |
 | \____/\__,_//____/\___/                |
 |                                        |
+| Mission = haha hihi hehe               |
+|                                        |
 | Members = {                            |
 |   Honza:  honzuvkod.dev                |
 |            @cloud:0d9e.tech            |
