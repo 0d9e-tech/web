@@ -1,0 +1,3 @@
+url: "https://0d9e.tech" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: "/blog" # the subpath of your site, e.g. /blog
+title: "0d9e blog" # the name of your site, e.g. ACME Corp.
