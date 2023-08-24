@@ -64,7 +64,7 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
   }
 
   const resp = await serveDir(e.request, { fsRoot: "static", quiet: true });
-  if (![200, 304].includes(resp.status)) {
+  if (![200, 301, 304].includes(resp.status)) {
     if (resp.status !== 404) console.error(resp);
 
     return new Response("Yo mama so fat she ate this page (404 Not Found)", {
