@@ -7,33 +7,9 @@
    viewBox="0 0 5 5"
    version="1.1"
    id="SVGRoot"
-   sodipodi:docname="logo.svg"
-   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-  <sodipodi:namedview
-     id="namedview132"
-     pagecolor="#ffffff"
-     bordercolor="#000000"
-     borderopacity="0.25"
-     inkscape:showpageshadow="2"
-     inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="0"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:document-units="cm"
-     showgrid="false"
-     inkscape:zoom="4.572"
-     inkscape:cx="82.130359"
-     inkscape:cy="94.488189"
-     inkscape:window-width="1920"
-     inkscape:window-height="1028"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="SVGRoot" />
   <defs
      id="defs16">
     <linearGradient
@@ -63,7 +39,7 @@
   </defs>
   <g
      id="layer2"
-     style="display:inline;fill:#000000;fill-opacity:1">
+     style="fill:#000000;fill-opacity:1">
     <rect
        style="display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.0980392;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect4567"
@@ -778,7 +754,7 @@
        cy="2.477406"
        r="2.4000001" />
     <path
-       style="display:none;fill:none;stroke:#ffffff;stroke-width:3.77953;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       style="fill:none;stroke:#ffffff;stroke-width:3.77953;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="path2081"
        d="M 89.539819,67.074653 0.91968391,117.84957 -87.362756,66.489748 -87.025061,-35.645001 1.5950737,-86.419923 89.877514,-35.060097 Z"
        transform="matrix(0.02396325,0,0,0.02396547,1.7397289,2.1121446)" />
