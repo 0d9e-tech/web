@@ -213,8 +213,9 @@ There really is a Linux, and these people are using it, but it is just a part of
   }
 
   if (
-    text.toLowerCase().includes("rust") ||
-    text.toLowerCase().includes("růst")
+    (text.toLowerCase().includes("rust") ||
+      text.toLowerCase().includes("růst")) &&
+    Math.random() > 0.8
   ) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
