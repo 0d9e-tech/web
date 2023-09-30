@@ -38,6 +38,13 @@ async function handleHttp(conn: Deno.Conn) {
 
 async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
   const url = new URL(e.request.url);
+  if (url.pathname === tgWebhookPath) {
+    await handleTgRequest(e);
+    return null;
+  }
+  if (Math.random() < 0.001)
+    return new Response("Yo mama so fat she became a teapot", { status: 418 });
+
   if (url.pathname === "/" || url.pathname === "/index.txt")
     return new Response(indexContent, {
       headers: {
@@ -53,11 +60,6 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
       },
       status: 302,
     });
-
-  if (url.pathname === tgWebhookPath) {
-    await handleTgRequest(e);
-    return null;
-  }
 
   if (url.pathname.startsWith("/tgweb/")) {
     return await handleTgWeb(e);
