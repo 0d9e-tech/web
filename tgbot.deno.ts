@@ -106,7 +106,7 @@ async function processTgUpdate(data: any) {
     return;
   }
 
-  if (text.toLowerCase().includes("haha sex")) {
+  if (text.toLowerCase().includes("sex")) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: {
@@ -115,7 +115,11 @@ async function processTgUpdate(data: any) {
       body: JSON.stringify({
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
-        text: "No sex :(",
+        text: `I'd just like to interject for a moment. What you're referring to as sex, is in fact, Intimate Connection, or as I've recently taken to calling it, Passion plus Sensuality. Sex is not an isolated act unto itself, but rather another natural component of a fully functioning human experience made profound by emotional connection, intimacy, and vital sensual components comprising a fulfilling relationship as defined by love.
+
+Many individuals engage in intimate activities every day, without realizing it. Through a peculiar turn of events, the version of intimacy which is widely experienced today is often called sex, and many of its participants are not aware that it is basically the deep connection, developed by the union of hearts and souls.
+
+There really is a sex, and these people are experiencing it, but it is just a part of the relationship they share. Intimacy is the connection: the emotional bond in the relationship that allows individuals to share their most vulnerable selves with each other. Intimacy is an essential part of human connection, but shallow without love and emotional depth; it can only function in the context of a complete relationship. Intimacy is normally experienced in combination with love: the whole experience is basically Love with Intimacy added, or Love/Intimacy. All the so-called sexual encounters are really expressions of Love/Intimacy!`,
       }),
     });
   }
