@@ -37,8 +37,7 @@
 |                                        |
 | Business partners = {                  |
 |   Radeksoft: radeksoft.cz              |
-| }                                      |
-\                                        /
+\ }                                      /
  ----------------------------------------
   \
     \
