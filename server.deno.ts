@@ -48,7 +48,7 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
   if (url.pathname === "/" || url.pathname === "/index.txt")
     return new Response(indexContent, {
       headers: {
-        "content-type": "text/plain",
+        "content-type": "text/plain; charset=utf-8",
       },
     });
 
