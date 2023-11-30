@@ -143,6 +143,20 @@ There really is a sex, and these people are experiencing it, but it is just a pa
     });
   }
 
+  if (text.toLowerCase().includes("balls")) {
+    await fetch(`https://api.telegram.org/bot${token}/sendVideoNote`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: data.message.chat.id,
+        video_note:
+          "DQACAgQAAxkBAAM5ZWhcS3G15OdZYfpOA1fsqnNm27AAAqQTAAIUuSFTCbbR-pNXdJMzBA",
+      }),
+    });
+  }
+
   if (text.toLowerCase().includes("regiojet")) {
     await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
       method: "POST",
