@@ -6,7 +6,7 @@ import {
   webhookPath as tgWebhookPath,
 } from "./tgbot.deno.ts";
 
-const indexContent = new TextDecoder().decode(await Deno.readFile("index.txt"));
+const indexContent = new TextDecoder().decode(await Deno.readFile("index.html"));
 
 async function handleHttp(conn: Deno.Conn) {
   for await (const e of Deno.serveHttp(conn)) {
@@ -45,20 +45,11 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
   if (Math.random() < 0.001)
     return new Response("Yo mama so fat she became a teapot", { status: 418 });
 
-  if (url.pathname === "/" || url.pathname === "/index.txt")
+  if (url.pathname === "/" || url.pathname === "/index.html")
     return new Response(indexContent, {
       headers: {
-        "content-type": "text/plain; charset=utf-8",
+        "content-type": "text/html; charset=utf-8",
       },
-    });
-
-  if (url.pathname === "/index.html")
-    return new Response("<p>Text only, go to <a href='/'>/</a></p>", {
-      headers: {
-        "content-type": "text/html",
-        location: "/",
-      },
-      status: 302,
     });
 
   if (url.pathname.startsWith("/tgweb/")) {
