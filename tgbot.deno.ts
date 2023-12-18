@@ -198,7 +198,10 @@ There really is a Linux, and these people are using it, but it is just a part of
     });
   }
 
-  if (/arch/i.exec(text) !== null && data.message.from === 656461353) {
+  if (
+    text.toLowerCase().includes("arch") &&
+    data.message.from.id === 656461353
+  ) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: {
