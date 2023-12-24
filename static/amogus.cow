@@ -1,14 +1,15 @@
 ##
 ## Very sus cow
 ##
-$the_cow = <<EOC;
-  $thoughts
-    $thoughts
-       _------_
-      .---.    \\
-     (     )   +--\\
-      `---`    |  |
-      |        |  |
-      |   __   +--/
+$eyes = '  ' unless ($eyes ne 'oo');
+
+$the_cow = <<"EOC";
+   $thoughts
+    $thoughts  .——————.
+      .———.    \\
+     ( $eyes  )   +——\\
+      `———´    |  |
+      |$tongue      |  |
+      |   __   +——/
       \\__/  \\__/
 EOC
