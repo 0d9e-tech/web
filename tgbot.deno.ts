@@ -196,58 +196,44 @@ Many computer users run a modified version of the GNU system every day, without 
 There really is a Linux, and these people are using it, but it is just a part of the system they use. Linux is the kernel: the program in the system that allocates the machine's resources to the other programs that you run. The kernel is an essential part of an operating system, but useless by itself; it can only function in the context of a complete operating system. Linux is normally used in combination with the GNU operating system: the whole system is basically GNU with Linux added, or GNU/Linux. All the so-called Linux distributions are really distributions of GNU/Linux!`,
       }),
     });
-  }
+}
+
 
 if (data.message.from.id === 656461353) {
 	const marian_nsfw = ['sex', 'píchat', 'pichat', 'prcat'];
-	for (const w in marian_nsfw) {
-		if (text.toLowerCase().includes(w)) {
-			await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					chat_id: data.message.chat.id,
-					message_id: data.message.message_id,
-				}),
-			});
-			await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					chat_id: MAIN_CHAT_ID,
-					text: "nsfw mariane",
-				}),
-			});
-			return;
-		}
+	let censoredText = text.toLowerCase();
+
+	for (const w of marian_nsfw) {
+		const regex = new RegExp(w, 'gi');
+		censoredText = censoredText.replace(regex, '***');
+	}
+
+	if (censoredText !== text.toLowerCase()) {
+		await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: json.stringify({
+				chat_id: data.message.chat.id,
+				message_id: data.message.message_id,
+			}),
+		});
+		await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: json.stringify({
+				chat_id: main_chat_id,
+				text: censoredText,
+			}),
+		});
+		return;
 	}
 }
 
-  if (
-    (text.toLowerCase().includes("arch") || text.toLowerCase().includes("sex") || text.toLowerCase().includes("píchat")) &&
-    data.message.from.id === 656461353
-  ) {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chat_id: data.message.chat.id,
-        reply_to_message_id: data.message.message_id,
-        text: "Ano Mariane, my víme",
-      }),
-    });
-  }
-
-  if (
-    (text.toLowerCase().includes("sex") || text.toLowerCase().includes("píchat") || text.toLowerCase().includes("pichat")) &&
-    data.message.from.id === 656461353
-  ) {
+  if (text.toLowerCase().includes("arch") && data.message.from.id === 656461353) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: {
