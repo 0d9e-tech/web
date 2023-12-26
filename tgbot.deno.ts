@@ -198,8 +198,54 @@ There really is a Linux, and these people are using it, but it is just a part of
     });
   }
 
+if (data.message.from.id === 656461353) {
+	const marian_nsfw = ['sex', 'píchat', 'pichat', 'prcat'];
+	for (const w in marian_nsfw) {
+		if (text.toLowerCase().includes(w)) {
+			await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					chat_id: data.message.chat.id,
+					message_id: data.message.message_id,
+				}),
+			});
+			await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					chat_id: MAIN_CHAT_ID,
+					text: "nsfw mariane",
+				}),
+			});
+			return;
+		}
+	}
+}
+
   if (
-    text.toLowerCase().includes("arch") &&
+    (text.toLowerCase().includes("arch") || text.toLowerCase().includes("sex") || text.toLowerCase().includes("píchat")) &&
+    data.message.from.id === 656461353
+  ) {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: data.message.chat.id,
+        reply_to_message_id: data.message.message_id,
+        text: "Ano Mariane, my víme",
+      }),
+    });
+  }
+
+  if (
+    (text.toLowerCase().includes("sex") || text.toLowerCase().includes("píchat") || text.toLowerCase().includes("pichat")) &&
     data.message.from.id === 656461353
   ) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
