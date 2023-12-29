@@ -1,4 +1,6 @@
 import unidecode from "npm:unidecode";
+import { geohash } from "./geohash.deno.ts";
+import { getImageForPoints, getUrlForPoints } from "./mapycz.deno.ts";
 
 const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
@@ -20,6 +22,50 @@ let manPages: string[];
 let tempDir = "";
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.Process>();
+
+const origin = { lat: 50.1005803, lon: 14.3954325 };
+async function postGeohash() {
+  const upcoming = new Date();
+  upcoming.setHours(6);
+  upcoming.setMinutes(Math.random() * 60);
+
+  const now = new Date();
+  if (upcoming.getTime() < now.getTime())
+    upcoming.setDate(upcoming.getDate() + 1);
+
+  await new Promise((resolve) =>
+    setTimeout(resolve, upcoming.getTime() - now.getTime())
+  );
+
+  const geoHash = await geohash(new Date(), origin);
+  const text = `[ ](${getImageForPoints([
+    origin,
+    geoHash,
+  ])})Today's geohash is at [${geoHash.lat
+    .toFixed(5)
+    .replace(".", "\\.")} ${geoHash.lon
+    .toFixed(5)
+    .replace(".", "\\.")}](${getUrlForPoints([
+    geoHash,
+  ])})\\.\nPlease refer to xkcd\\.com/426/ for further steps\\.`;
+  console.log(text);
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: MAIN_CHAT_ID,
+      text,
+      parse_mode: "MarkdownV2",
+    }),
+  })
+    .then((x) => x.json())
+    .then(console.log);
+
+  setTimeout(postGeohash, 1000 * 60 * 60 * 2);
+}
 
 export async function init() {
   if (!token || !DOMAIN || isNaN(MAIN_CHAT_ID)) {
@@ -62,6 +108,8 @@ export async function init() {
       text: `Bot started, index of ${manPages.length} man pages loaded`,
     }),
   });
+
+  postGeohash();
 }
 
 export async function handleRequest(e: Deno.RequestEvent) {
