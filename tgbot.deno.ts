@@ -194,6 +194,34 @@ async function processTgUpdate(data: any) {
     handleSh(data, text.slice(4));
   }
 
+  if (text === "/kdo") {
+    const reply_id = data.message.reply_to_message?.message_id;
+    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: data.message.chat.id,
+        message_id: data.message.message_id,
+      }),
+    });
+    if (reply_id !== undefined) {
+      await fetch(`https://api.telegram.org/bot${token}/sendVideo`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: data.message.chat.id,
+          reply_parameters: { message_id: reply_id },
+          video:
+            "BAACAgQAAxkDAANmZb5XjJUES6VCvJGtIRRrKMGwRpcAAq0SAAINl_BR5jVZOMRHxCI0BA",
+        }),
+      });
+    }
+  }
+
   if (text.includes("@yall") && data.message.chat.id === MAIN_CHAT_ID) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
