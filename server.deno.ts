@@ -6,7 +6,9 @@ import {
   webhookPath as tgWebhookPath,
 } from "./tgbot.deno.ts";
 
-const indexContent = new TextDecoder().decode(await Deno.readFile("index.html"));
+const indexContent = new TextDecoder().decode(
+  await Deno.readFile("index.html")
+);
 
 async function handleHttp(conn: Deno.Conn) {
   for await (const e of Deno.serveHttp(conn)) {
@@ -51,6 +53,19 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
         "content-type": "text/html; charset=utf-8",
       },
     });
+
+  if (url.pathname === "/about")
+    return new Response("", {
+      headers: {
+        Location: "/lore",
+      },
+      status: 301,
+    });
+
+  if (url.pathname === "/lore") {
+    url.pathname = "/lore.png";
+    e.request = new Request(url, e.request);
+  }
 
   if (url.pathname.startsWith("/tgweb/")) {
     return await handleTgWeb(e);
