@@ -63,7 +63,7 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
     });
 
   if (url.pathname === "/lore") {
-    url.pathname = "/lore.png";
+    url.pathname = "/lore.jpg";
     e.request = new Request(url, e.request);
   }
 
