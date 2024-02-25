@@ -18,7 +18,6 @@ function genRandomToken(bytes: number) {
 
 const webhookUrlToken = genRandomToken(96);
 
-let manPages: string[];
 let tempDir = "";
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.Process>();
@@ -75,17 +74,6 @@ export async function init() {
   tempDir = await Deno.makeTempDir();
   console.log("Using temp dir", tempDir);
 
-  manPages = await fetch(
-    "https://www.man7.org/linux/man-pages/dir_all_by_section.html"
-  )
-    .then((r) => r.text())
-    .then((t) =>
-      t
-        .split("\n")
-        .filter((x) => x.startsWith('<a href="./man'))
-        .map((x) => x.split('"')[1].slice(2))
-    );
-
   await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
     method: "POST",
     headers: {
@@ -105,7 +93,7 @@ export async function init() {
     },
     body: JSON.stringify({
       chat_id: MAIN_CHAT_ID,
-      text: `Bot started, index of ${manPages.length} man pages loaded`,
+      text: "Babes wakeup, novy shitpost prave dropnul (nebo jenom matej restartoval vpsku)",
     }),
   });
 
@@ -368,16 +356,20 @@ Be grateful for your abilities and your incredible success and your considerable
 
   const manMatch = text.match(/^\s*man\s*([1-8])?\s*([a-z-_+.]+)\s*$/i);
   if (manMatch !== null) {
-    const key =
-      (manMatch[1] === undefined ? "" : "man" + manMatch[1]) +
-      "/" +
-      manMatch[2] +
-      ".";
-    const matches = manPages
-      .filter((x) => x.includes(key))
-      .map((x) => `https://www.man7.org/linux/man-pages/${x}`);
-    const text =
-      matches.length === 0 ? "No man pages found" : matches.join("\n");
+    let text = "https://man.archlinux.org/man/";
+    text += manMatch[2];
+    if (manMatch[1] !== undefined) text += "." + manMatch[1];
+    let parse_mode: string | undefined = undefined;
+
+    const response = await fetch(text + ".txt");
+    if (response.status === 200) {
+      const manText = await response.text();
+      if (manText.length < 4000) {
+        text = "```\n" + manText.replaceAll("```", "`´`") + "```";
+        parse_mode = "MarkdownV2";
+      }
+    }
+
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: {
@@ -387,6 +379,7 @@ Be grateful for your abilities and your incredible success and your considerable
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
         text,
+        parse_mode,
       }),
     });
   }
