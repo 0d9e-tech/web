@@ -5,6 +5,9 @@ import { getImageForPoints, getUrlForPoints } from "./mapycz.deno.ts";
 const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN");
+const STICKER_SET_NAME = Deno.env.get("STICKER_SET_NAME");
+const STICKER_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
+
 export const webhookPath = "/tg-webhook";
 
 function genRandomToken(bytes: number) {
@@ -67,8 +70,19 @@ async function postGeohash() {
 }
 
 export async function init() {
-  if (!token || !DOMAIN || isNaN(MAIN_CHAT_ID)) {
-    throw new Error("TG_BOT_TOKEN, TG_MAIN_CHAT_ID or DOMAIN is not set");
+  if (
+    !token ||
+    !DOMAIN ||
+    isNaN(MAIN_CHAT_ID) ||
+    !STICKER_SET_NAME ||
+    isNaN(STICKER_SET_OWNER)
+  ) {
+    console.log(
+      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICKER_SET_NAME: ${STICKER_SET_NAME}, STICKER_SET_OWNER: ${STICKER_SET_OWNER}`
+    );
+    throw new Error(
+      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICKER_SET_NAME or STICKER_SET_OWNER is not set"
+    );
   }
 
   tempDir = await Deno.makeTempDir();
@@ -132,15 +146,11 @@ export async function handleRequest(e: Deno.RequestEvent) {
 }
 
 async function processTgUpdate(data: any) {
-  if (DOMAIN?.includes("ngrok")) console.log(data);
   if ("callback_query" in data) return await handleCallbackQuery(data);
   if ("inline_query" in data) return await handleInlineQuery(data);
 
   const text = data?.message?.text ?? data?.message?.caption;
-  if (typeof text !== "string") {
-    console.log("no text", data);
-    return;
-  }
+  if (typeof text !== "string") return;
 
   const reactions = [
     { t: ["sex"], r: "🤨" },
@@ -352,6 +362,26 @@ Be grateful for your abilities and your incredible success and your considerable
 
   if (text.startsWith("/logo ") && data.message.chat.id === MAIN_CHAT_ID) {
     await handleLogo(data, text.slice(6));
+  }
+
+  if (
+    text.toLowerCase() === "sticker this" &&
+    data.message.chat.id === MAIN_CHAT_ID
+  ) {
+    const result = await sticekrThis(data.message.reply_to_message);
+    if (result !== null) {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: data.message.chat.id,
+          reply_to_message_id: data.message.message_id,
+          text: `Not even your mom could make a sticker out of that (${result})`,
+        }),
+      });
+    }
   }
 
   const manMatch = text.match(/^\s*man\s*([1-8])?\s*([a-z-_+.]+)\s*$/i);
@@ -637,4 +667,97 @@ async function handleInlineQuery(data: any) {
         ],
       }),
     });
+}
+
+async function sticekrThis(orig_msg: any): Promise<string | null> {
+  if (!orig_msg) return "wtf";
+  let file;
+  if (Array.isArray(orig_msg.photo)) {
+    file = orig_msg.photo.at(-1)?.file_id;
+  } else if (orig_msg.document?.mime_type?.startsWith("image")) {
+    file = orig_msg.document.file_id;
+  }
+  if (!file) return "not an image file duh";
+
+  const resp = await fetch(`https://api.telegram.org/bot${token}/getFile`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      file_id: file,
+    }),
+  });
+  if (!resp.ok) return "telegrams a hoe";
+  const data = await resp.json();
+  if (!data.ok) return "telegrams a hoe2";
+
+  const resp2 = await fetch(
+    `https://api.telegram.org/file/bot${token}/${data.result.file_path}`
+  );
+  if (!resp2.ok) return "telegram cdn is a hoe";
+
+  const fileName = await Deno.makeTempFile();
+  await Deno.writeFile(fileName, resp2.body!);
+  const outFileName = fileName + ".webp";
+
+  const cmd = new Deno.Command("convert", {
+    args: [fileName, "-resize", "512x512", outFileName],
+  });
+  const res = await cmd.output();
+  if (res.code !== 0) return "imagemagick is a hoe";
+  const sticker = await Deno.readFile(outFileName);
+
+  const body = new FormData();
+  body.append("user_id", STICKER_SET_OWNER.toString());
+  body.append("name", STICKER_SET_NAME);
+  body.append(
+    "sticker",
+    JSON.stringify({ sticker: "attach://file", emoji_list: ["🤓"] })
+  );
+  body.append("file", new Blob([sticker], { type: "image/webp" }), "file.webp");
+  const resp3 = await fetch(
+    `https://api.telegram.org/bot${token}/addStickerToSet`,
+    {
+      method: "POST",
+      body,
+    }
+  );
+  if (!resp3.ok) return "skill issue";
+
+  const resp4 = await fetch(
+    `https://api.telegram.org/bot${token}/getStickerSet`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: STICKER_SET_NAME,
+      }),
+    }
+  );
+  if (!resp4.ok) return "i ran out of error message ideas";
+  const data4 = await resp4.json();
+  if (!data4.ok) return "i ran out of error message ideas even more";
+  const stickerId = data4.result.stickers.at(-1).file_id;
+  if (!stickerId) return "i ran out of error message ideas the most";
+
+  const resp5 = await fetch(
+    `https://api.telegram.org/bot${token}/sendSticker`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: orig_msg.chat.id,
+        sticker: stickerId,
+      }),
+    }
+  );
+
+  if (!resp5.ok) return "actually it succeeded but i failed to send it";
+
+  return null;
 }

@@ -12,7 +12,7 @@ WORKDIR /app
 RUN mkdir -p /usr/share/fonts/truetype/inconsolata
 COPY stuff/Inconsolata-Bold.otf /usr/share/fonts/truetype/inconsolata
 
-RUN apt update && apt install -y file procps figlet fortune cowsay pslist inkscape --no-install-recommends && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y file procps figlet fortune cowsay pslist inkscape imagemagick --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 COPY *.deno.ts index.html tgbot.deno.ts ./
 RUN deno cache server.deno.ts
