@@ -249,7 +249,7 @@ async function processTgUpdate(data: any) {
     });
   }
 
-  if (text.toLowerCase().includes("regiojet")) {
+  if (text.toLowerCase().includes("regiojet") || text.toLowerCase().includes("php")) {
     await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
       method: "POST",
       headers: {
