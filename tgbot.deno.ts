@@ -249,7 +249,10 @@ async function processTgUpdate(data: any) {
     });
   }
 
-  if (text.toLowerCase().includes("regiojet") || text.toLowerCase().includes("php")) {
+  if (
+    text.toLowerCase().includes("regiojet") ||
+    text.toLowerCase().includes("php")
+  ) {
     await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
       method: "POST",
       headers: {
@@ -398,20 +401,40 @@ Be grateful for your abilities and your incredible success and your considerable
         text = "```\n" + manText.replaceAll("```", "`´`") + "```";
         parse_mode = "MarkdownV2";
       }
+    } else if (response.status === 404) {
+      text = "";
+      await fetch(`https://api.telegram.org/bot${token}/setMessageReaction`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: data.message.chat.id,
+          message_id: data.message.message_id,
+          is_big: true,
+          reaction: [
+            {
+              type: "emoji",
+              emoji: "🤷‍♂️",
+            },
+          ],
+        }),
+      });
     }
 
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chat_id: data.message.chat.id,
-        reply_to_message_id: data.message.message_id,
-        text,
-        parse_mode,
-      }),
-    });
+    if (text)
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: data.message.chat.id,
+          reply_to_message_id: data.message.message_id,
+          text,
+          parse_mode,
+        }),
+      });
   }
 
   if (text.toLowerCase().includes("sus")) {
