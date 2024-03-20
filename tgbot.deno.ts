@@ -241,6 +241,27 @@ async function processTgUpdate(data: any) {
     });
   }
 
+  if (data.message.from.id === 929963796) {
+    const counts = new Map([..."regiojet"].map((x) => [x, 0]));
+    for (const c of text.toLowerCase()) {
+      if (counts.has(c)) counts.set(c, counts.get(c)! + 1);
+    }
+    counts.set("e", Math.floor(counts.get("e")! / 2));
+    const min = Math.min(...counts.values());
+    for (let i = 0; i < min; i++) {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: MAIN_CHAT_ID,
+          text: "prokope trolly nemaji byt destructive",
+        }),
+      });
+    }
+  }
+
   if (
     text.toLowerCase().includes("gnu") &&
     text.toLowerCase().includes("linux")
