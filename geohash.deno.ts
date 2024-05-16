@@ -1,3 +1,6 @@
+// The authors disclaim copyright to this source code (they are ashamed to
+// admit they wrote it)
+
 import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
 import { coordsToString } from "./mapycz.deno.ts";
 
