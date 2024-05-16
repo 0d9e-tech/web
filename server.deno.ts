@@ -1,3 +1,6 @@
+// The authors disclaim copyright to this source code (they are ashamed to
+// admit they wrote it)
+
 import { serveDir } from "https://deno.land/std@0.190.0/http/file_server.ts";
 import {
   handleRequest as handleTgRequest,

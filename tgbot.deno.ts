@@ -1,3 +1,6 @@
+// The authors disclaim copyright to this source code (they are ashamed to
+// admit they wrote it)
+
 import unidecode from "npm:unidecode";
 import { geohash } from "./geohash.deno.ts";
 import { getImageForPoints, getUrlForPoints } from "./mapycz.deno.ts";

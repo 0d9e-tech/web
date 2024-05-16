@@ -1,3 +1,6 @@
+// The authors disclaim copyright to this source code (they are ashamed to
+// admit they wrote it)
+
 const alphabet = [
   "0",
   "A",
