@@ -332,7 +332,7 @@ Be grateful for your abilities and your incredible success and your considerable
 
   if (
     text.toLowerCase() === "sticker this" &&
-    //data.message.chat.id === MAIN_CHAT_ID
+    data.message.chat.id === MAIN_CHAT_ID
   ) {
     const result = await sticekrThis(data.message.reply_to_message);
     if (result !== null) {
