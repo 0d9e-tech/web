@@ -245,6 +245,15 @@ async function processTgUpdate(data: any) {
   }
 
   if (
+    text.toLowerCase().includes("zig")
+  ) {
+    await tgCall({
+      chat_id: data.message.chat.id,
+      text: `Hail!`,
+    });
+  }
+
+  if (
     text.toLowerCase().includes("gnu") &&
     text.toLowerCase().includes("linux")
   ) {
