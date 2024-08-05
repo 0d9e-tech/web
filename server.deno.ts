@@ -13,6 +13,10 @@ const indexContent = new TextDecoder().decode(
   await Deno.readFile("index.html")
 );
 
+const posteleContent = new TextDecoder().decode(
+  await Deno.readFile("postele.html")
+);
+
 async function handleHttp(conn: Deno.Conn) {
   for await (const e of Deno.serveHttp(conn)) {
     const start = performance.now();
@@ -52,6 +56,14 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
 
   if (url.pathname === "/" || url.pathname === "/index.html")
     return new Response(indexContent, {
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
+    });
+
+
+  if (url.pathname === "/postele.html")
+    return new Response(posteleContent, {
       headers: {
         "content-type": "text/html; charset=utf-8",
       },
