@@ -41,7 +41,7 @@ let tempDir = "";
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.Process>();
 
-const origin = { lat: 50.1005803, lon: 14.3954325 };
+const origin = { lat: 50.7604844, lon: 15.2770997 };
 async function postGeohash() {
   const upcoming = new Date();
   upcoming.setHours(6);
