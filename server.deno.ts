@@ -13,10 +13,6 @@ const indexContent = new TextDecoder().decode(
   await Deno.readFile("index.html")
 );
 
-const posteleContent = new TextDecoder().decode(
-  await Deno.readFile("postele.html")
-);
-
 async function handleHttp(conn: Deno.Conn) {
   for await (const e of Deno.serveHttp(conn)) {
     const start = performance.now();
