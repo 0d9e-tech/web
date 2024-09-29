@@ -107,9 +107,11 @@ function coordsToString(coords: { lat: number; lon: number }[]): string {
 }
 
 export function getUrlForPoints(points: { lat: number; lon: number }[]) {
-  return `https://en.mapy.cz/zakladni?vlastni-body&uc=${coordsToString(
-    points
-  )}`;
+  return `https://en.mapy.cz/zakladni?vlastni-body&uc=${
+    coordsToString(
+      points,
+    )
+  }`;
 }
 
 export function getImageForPoints(points: { lat: number; lon: number }[]) {

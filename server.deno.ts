@@ -10,7 +10,7 @@ import {
 } from "./tgbot.deno.ts";
 
 const indexContent = new TextDecoder().decode(
-  await Deno.readFile("index.html")
+  await Deno.readFile("index.html"),
 );
 
 async function handleHttp(conn: Deno.Conn) {
@@ -23,9 +23,11 @@ async function handleHttp(conn: Deno.Conn) {
         const resp = await r;
         const end = performance.now();
         console.log(
-          `${new Date().toISOString()} ${resp.status} ${e.request.method} ${
-            e.request.url
-          } ${(end - start).toFixed(1)}ms`
+          `${
+            new Date().toISOString()
+          } ${resp.status} ${e.request.method} ${e.request.url} ${
+            (end - start).toFixed(1)
+          }ms`,
         );
         return await e.respondWith(resp);
       },
@@ -47,31 +49,34 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
     await handleTgRequest(e);
     return null;
   }
-  if (Math.random() < 0.001)
+  if (Math.random() < 0.001) {
     return new Response("Yo mama so fat she became a teapot", { status: 418 });
+  }
 
-  if (url.pathname === "/" || url.pathname === "/index.html")
+  if (url.pathname === "/" || url.pathname === "/index.html") {
     return new Response(indexContent, {
       headers: {
         "content-type": "text/html; charset=utf-8",
       },
     });
+  }
 
-
-  if (url.pathname === "/postele.html")
+  if (url.pathname === "/postele.html") {
     return new Response(posteleContent, {
       headers: {
         "content-type": "text/html; charset=utf-8",
       },
     });
+  }
 
-  if (url.pathname === "/about")
+  if (url.pathname === "/about") {
     return new Response("", {
       headers: {
         Location: "/lore",
       },
       status: 301,
     });
+  }
 
   if (url.pathname === "/lore") {
     url.pathname = "/lore.jpg";
@@ -105,5 +110,6 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
 
 await tgBotInit();
 
-for await (const conn of Deno.listen({ port: 8000 }))
+for await (const conn of Deno.listen({ port: 8000 })) {
   handleHttp(conn).catch((err) => console.error(err));
+}

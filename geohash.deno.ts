@@ -28,7 +28,7 @@ async function getDjiaFor(key: string) {
 
 async function hash(seed: string) {
   const digest = new Uint8Array(
-    await crypto.subtle.digest("MD5", new TextEncoder().encode(seed))
+    await crypto.subtle.digest("MD5", new TextEncoder().encode(seed)),
   );
   let lat = 0;
   for (let i = 0; i < 8; i++) {
@@ -44,7 +44,7 @@ async function hash(seed: string) {
 
 export async function geohash(
   date: Date,
-  base_loc: { lat: number; lon: number }
+  base_loc: { lat: number; lon: number },
 ) {
   const seedDatepart = date.toISOString().slice(0, 10);
 
