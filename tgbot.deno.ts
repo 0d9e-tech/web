@@ -15,7 +15,7 @@ export const webhookPath = "/tg-webhook";
 
 function genRandomToken(bytes: number) {
   return btoa(
-    String.fromCharCode(...crypto.getRandomValues(new Uint8Array(bytes)))
+    String.fromCharCode(...crypto.getRandomValues(new Uint8Array(bytes))),
   )
     .replaceAll("/", "_")
     .replaceAll("+", "-")
@@ -24,9 +24,11 @@ function genRandomToken(bytes: number) {
 
 const webhookUrlToken = genRandomToken(96);
 
-function tgCall(options: any, endpoint: string = "sendMessage"): Promise<Response> {
-  if(endpoint == "sendMessage")
-    options.chat_id ??= MAIN_CHAT_ID;
+function tgCall(
+  options: any,
+  endpoint: string = "sendMessage",
+): Promise<Response> {
+  if (endpoint == "sendMessage") options.chat_id ??= MAIN_CHAT_ID;
 
   return fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
     method: "POST",
@@ -34,7 +36,28 @@ function tgCall(options: any, endpoint: string = "sendMessage"): Promise<Respons
       "Content-Type": "application/json",
     },
     body: JSON.stringify(options),
-  })
+  });
+}
+
+async function domeny() {
+  const resp = await fetch(
+    "https://auctions-master.nic.cz/share/new_auctions.json",
+  );
+  const list = await resp.json();
+
+  const x = list
+    .filter(
+      (a) =>
+        a.auction_from.split("T")[0] === new Date().toISOString().split("T")[0],
+    )
+    .map((x) => x.item_title);
+  x.sort();
+  while (x.length > 0) {
+    const chunk = x.splice(0, 50);
+    await tgCall({
+      text: chunk.join("\n"),
+    }).then((x) => x.json());
+  }
 }
 
 let tempDir = "";
@@ -48,24 +71,33 @@ async function postGeohash() {
   upcoming.setMinutes(Math.random() * 60);
 
   const now = new Date();
-  if (upcoming.getTime() < now.getTime())
+  if (upcoming.getTime() < now.getTime()) {
     upcoming.setDate(upcoming.getDate() + 1);
+  }
 
   await new Promise((resolve) =>
     setTimeout(resolve, upcoming.getTime() - now.getTime())
   );
 
   const geoHash = await geohash(new Date(), origin);
-  const text = `[ ](${getImageForPoints([
-    origin,
-    geoHash,
-  ])})Today's geohash is at [${geoHash.lat
-    .toFixed(5)
-    .replace(".", "\\.")} ${geoHash.lon
-    .toFixed(5)
-    .replace(".", "\\.")}](${getUrlForPoints([
-    geoHash,
-  ])})\\.\nPlease refer to xkcd\\.com/426/ for further steps\\.`;
+  const text = `[ ](${
+    getImageForPoints([
+      origin,
+      geoHash,
+    ])
+  })Today's geohash is at [${
+    geoHash.lat
+      .toFixed(5)
+      .replace(".", "\\.")
+  } ${
+    geoHash.lon
+      .toFixed(5)
+      .replace(".", "\\.")
+  }](${
+    getUrlForPoints([
+      geoHash,
+    ])
+  })\\.\nPlease refer to xkcd\\.com/426/ for further steps\\.`;
   console.log(text);
 
   await tgCall({
@@ -75,14 +107,28 @@ async function postGeohash() {
     .then((x) => x.json())
     .then(console.log);
 
+  await domeny();
+
   setTimeout(postGeohash, 1000 * 60 * 60 * 2);
 
-  if(Math.random() < .03)
-    setTimeout(async () =>
-      await tgCall({
-        text: (await (await fetch('https://%73%6e%65%64%6c-%75%7a-%6b%75%62%69%6b-%70%6f%6e%6f%7a%6b%75.%67%69%74%68%75%62.%69%6f')).text())
-                .replace(/\r|<[^>]+>/g, "").replace(/\s{2,}/gm, "\n").trim(),
-      }), Math.random() * 600000 + 600000);
+  if (Math.random() < 0.03) {
+    setTimeout(
+      async () =>
+        await tgCall({
+          text: (
+            await (
+              await fetch(
+                "https://%73%6e%65%64%6c-%75%7a-%6b%75%62%69%6b-%70%6f%6e%6f%7a%6b%75.%67%69%74%68%75%62.%69%6f",
+              )
+            ).text()
+          )
+            .replace(/\r|<[^>]+>/g, "")
+            .replace(/\s{2,}/gm, "\n")
+            .trim(),
+        }),
+      Math.random() * 600000 + 600000,
+    );
+  }
 }
 
 export async function init() {
@@ -94,24 +140,28 @@ export async function init() {
     isNaN(STICKER_SET_OWNER)
   ) {
     console.log(
-      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICKER_SET_NAME: ${STICKER_SET_NAME}, STICKER_SET_OWNER: ${STICKER_SET_OWNER}`
+      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICKER_SET_NAME: ${STICKER_SET_NAME}, STICKER_SET_OWNER: ${STICKER_SET_OWNER}`,
     );
     throw new Error(
-      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICKER_SET_NAME or STICKER_SET_OWNER is not set"
+      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICKER_SET_NAME or STICKER_SET_OWNER is not set",
     );
   }
 
   tempDir = await Deno.makeTempDir();
   console.log("Using temp dir", tempDir);
 
-  await tgCall({
-    url: `https://${DOMAIN}${webhookPath}`,
-    secret_token: webhookUrlToken,
-    allowed_updates: ["message", "callback_query", "inline_query"],
-  }, "setWebhook");
+  await tgCall(
+    {
+      url: `https://${DOMAIN}${webhookPath}`,
+      secret_token: webhookUrlToken,
+      allowed_updates: ["message", "callback_query", "inline_query"],
+    },
+    "setWebhook",
+  );
 
   await tgCall({
-    text: "Babes wakeup, novy shitpost prave dropnul (nebo jenom matej restartoval vpsku)",
+    text:
+      "Babes wakeup, novy shitpost prave dropnul (nebo jenom matej restartoval vpsku)",
   });
 
   postGeohash();
@@ -128,7 +178,7 @@ export async function handleRequest(e: Deno.RequestEvent) {
         headers: {
           "Content-Type": "text/plain",
         },
-      })
+      }),
     );
     return;
   }
@@ -142,7 +192,7 @@ export async function handleRequest(e: Deno.RequestEvent) {
         headers: {
           "Content-Type": "text/plain",
         },
-      })
+      }),
     ),
     processTgUpdate(data),
   ]);
@@ -171,17 +221,20 @@ async function processTgUpdate(data: any) {
 
     if (!trigger) continue;
 
-    await tgCall({
-      chat_id: data.message.chat.id,
-      message_id: data.message.message_id,
-      is_big: true,
-      reaction: [
-        {
-          type: "emoji",
-          emoji: r,
-        },
-      ],
-    }, "setMessageReaction");
+    await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        message_id: data.message.message_id,
+        is_big: true,
+        reaction: [
+          {
+            type: "emoji",
+            emoji: r,
+          },
+        ],
+      },
+      "setMessageReaction",
+    );
     break;
   }
 
@@ -191,17 +244,23 @@ async function processTgUpdate(data: any) {
 
   if (text === "/kdo") {
     const reply_id = data.message.reply_to_message?.message_id;
-    await tgCall({
-      chat_id: data.message.chat.id,
-      message_id: data.message.message_id,
-    }, "deleteMessage");
-    if (reply_id !== undefined) {
-      await tgCall({
+    await tgCall(
+      {
         chat_id: data.message.chat.id,
-        reply_parameters: { message_id: reply_id },
-        video:
-          "BAACAgQAAxkDAANmZb5XjJUES6VCvJGtIRRrKMGwRpcAAq0SAAINl_BR5jVZOMRHxCI0BA",
-      }, "sendVideo");
+        message_id: data.message.message_id,
+      },
+      "deleteMessage",
+    );
+    if (reply_id !== undefined) {
+      await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          reply_parameters: { message_id: reply_id },
+          video:
+            "BAACAgQAAxkDAANmZb5XjJUES6VCvJGtIRRrKMGwRpcAAq0SAAINl_BR5jVZOMRHxCI0BA",
+        },
+        "sendVideo",
+      );
     }
   }
 
@@ -215,38 +274,45 @@ async function processTgUpdate(data: any) {
   }
 
   if (text.toLowerCase().includes("balls")) {
-    await tgCall({
-      chat_id: data.message.chat.id,
-      video_note:
-        "DQACAgQAAxkDAAM8ZWhhSjCXOdVCv7a8SkikjCDwEH4AAiQSAAKXPEhTuYZAGfYG_KwzBA",
-    }, "sendVideoNote");
+    await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        video_note:
+          "DQACAgQAAxkDAAM8ZWhhSjCXOdVCv7a8SkikjCDwEH4AAiQSAAKXPEhTuYZAGfYG_KwzBA",
+      },
+      "sendVideoNote",
+    );
   }
 
   if (text.toLowerCase().includes("doslova")) {
-    await tgCall({
-      chat_id: data.message.chat.id,
-      sticker:
-        "CAACAgQAAxUAAWYaZDro9kEe0mLkwvNEkBKbmBS6AAKLFAACwXbgUt-2B1-aBYwpNAQ",
-    }, "sendSticker");
+    await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        sticker:
+          "CAACAgQAAxUAAWYaZDro9kEe0mLkwvNEkBKbmBS6AAKLFAACwXbgUt-2B1-aBYwpNAQ",
+      },
+      "sendSticker",
+    );
   }
 
   if (
     text.toLowerCase().includes("regiojet") ||
     text.toLowerCase().includes("php")
   ) {
-    await tgCall({
-      chat_id: data.message.chat.id,
-      message_id: data.message.message_id,
-    }, "deleteMessage");
+    await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        message_id: data.message.message_id,
+      },
+      "deleteMessage",
+    );
     await tgCall({
       chat_id: data.message.chat.id,
       text: `rule violation by ${data.message.from.first_name} detected`,
     });
   }
 
-  if (
-    text.toLowerCase().includes("zig")
-  ) {
+  if (text.toLowerCase().includes("zig")) {
     await tgCall({
       chat_id: data.message.chat.id,
       text: `Hail!`,
@@ -260,7 +326,8 @@ async function processTgUpdate(data: any) {
     const r1 = await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
-      text: `No, Richard, it's 'Linux', not 'GNU/Linux'. The most important contributions that the FSF made to Linux were the creation of the GPL and the GCC compiler. Those are fine and inspired products. GCC is a monumental achievement and has earned you, RMS, and the Free Software Foundation countless kudos and much appreciation.
+      text:
+        `No, Richard, it's 'Linux', not 'GNU/Linux'. The most important contributions that the FSF made to Linux were the creation of the GPL and the GCC compiler. Those are fine and inspired products. GCC is a monumental achievement and has earned you, RMS, and the Free Software Foundation countless kudos and much appreciation.
 
 Following are some reasons for you to mull over, including some already answered in your FAQ.
 
@@ -276,7 +343,8 @@ One guy, Linus Torvalds, used GCC to make his operating system (yes, Linux is an
       await tgCall({
         chat_id: data.message.chat.id,
         reply_to_message_id: m1.result.message_id,
-        text: `Next, even if we limit the GNU/Linux title to the GNU-based Linux distributions, we run into another obvious problem. XFree86 may well be more important to a particular Linux installation than the sum of all the GNU contributions. More properly, shouldn't the distribution be called XFree86/Linux? Or, at a minimum, XFree86/GNU/Linux? Of course, it would be rather arbitrary to draw the line there when many other fine contributions go unlisted. Yes, I know you've heard this one before. Get used to it. You'll keep hearing it until you can cleanly counter it.
+        text:
+          `Next, even if we limit the GNU/Linux title to the GNU-based Linux distributions, we run into another obvious problem. XFree86 may well be more important to a particular Linux installation than the sum of all the GNU contributions. More properly, shouldn't the distribution be called XFree86/Linux? Or, at a minimum, XFree86/GNU/Linux? Of course, it would be rather arbitrary to draw the line there when many other fine contributions go unlisted. Yes, I know you've heard this one before. Get used to it. You'll keep hearing it until you can cleanly counter it.
 
 You seem to like the lines-of-code metric. There are many lines of GNU code in a typical Linux distribution. You seem to suggest that (more LOC) == (more important). However, I submit to you that raw LOC numbers do not directly correlate with importance. I would suggest that clock cycles spent on code is a better metric. For example, if my system spends 90% of its time executing XFree86 code, XFree86 is probably the single most important collection of code on my system. Even if I loaded ten times as many lines of useless bloatware on my system and I never excuted that bloatware, it certainly isn't more important code than XFree86. Obviously, this metric isn't perfect either, but LOC really, really sucks. Please refrain from using it ever again in supporting any argument.
 
@@ -302,11 +370,13 @@ Be grateful for your abilities and your incredible success and your considerable
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
       parse_mode: "MarkdownV2",
-      text: `\`\`\`\n${JSON.stringify(
-        data.message.reply_to_message,
-        null,
-        2
-      )}\n\`\`\``,
+      text: `\`\`\`\n${
+        JSON.stringify(
+          data.message.reply_to_message,
+          null,
+          2,
+        )
+      }\n\`\`\``,
     });
   }
 
@@ -351,26 +421,30 @@ Be grateful for your abilities and your incredible success and your considerable
       }
     } else if (response.status === 404) {
       text = "";
-      await tgCall({
-        chat_id: data.message.chat.id,
-        message_id: data.message.message_id,
-        is_big: true,
-        reaction: [
-          {
-            type: "emoji",
-            emoji: "🤷‍♂️",
-          },
-        ],
-      }, "setMessageReaction");
+      await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          message_id: data.message.message_id,
+          is_big: true,
+          reaction: [
+            {
+              type: "emoji",
+              emoji: "🤷‍♂️",
+            },
+          ],
+        },
+        "setMessageReaction",
+      );
     }
 
-    if (text)
+    if (text) {
       await tgCall({
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
         text,
         parse_mode,
       });
+    }
   }
 
   if (text.toLowerCase().includes("sus")) {
@@ -412,13 +486,17 @@ function slugify(text: string) {
 
 async function handleLogo(data: any, text: string) {
   const fn = `${slugify(text)}_${new Date().toISOString()}`;
-  if ((await generateLogos(text, fn)) === 0)
-    await tgCall({
-      chat_id: data.message.chat.id,
-      reply_to_message_id: data.message.message_id,
-      photo: `https://${DOMAIN}/persistent/logos/${fn}.png`,
-      caption: `https://${DOMAIN}/persistent/logos/${fn}.svg`,
-    }, "sendPhoto");
+  if ((await generateLogos(text, fn)) === 0) {
+    await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        reply_to_message_id: data.message.message_id,
+        photo: `https://${DOMAIN}/persistent/logos/${fn}.png`,
+        caption: `https://${DOMAIN}/persistent/logos/${fn}.svg`,
+      },
+      "sendPhoto",
+    );
+  }
 }
 
 async function handleSh(data: any, cmd: string) {
@@ -446,7 +524,7 @@ async function handleSh(data: any, cmd: string) {
       outFile,
       id,
       data.message.message_id,
-      raceResult.code
+      raceResult.code,
     );
     return;
   }
@@ -457,7 +535,8 @@ async function handleSh(data: any, cmd: string) {
   const progressMessageResponse = await tgCall({
     reply_to_message_id: data.message.message_id,
     parse_mode: "MarkdownV2",
-    text: `[Command is taking too long](https://${DOMAIN}/tgweb/${id})\\. Set Content\\-Type with \`/settype ${id} text/plain\``,
+    text:
+      `[Command is taking too long](https://${DOMAIN}/tgweb/${id})\\. Set Content\\-Type with \`/settype ${id} text/plain\``,
     reply_markup: {
       inline_keyboard: [
         [
@@ -468,23 +547,25 @@ async function handleSh(data: any, cmd: string) {
         ],
       ],
     },
-  })
-    .then((x) => x.json());
+  }).then((x) => x.json());
 
   const status = await proc.status();
   runningProcesses.delete(id);
 
-  await tgCall({
-    message_id: progressMessageResponse.result.message_id,
-    reply_markup: {
-      inline_keyboard: [],
+  await tgCall(
+    {
+      message_id: progressMessageResponse.result.message_id,
+      reply_markup: {
+        inline_keyboard: [],
+      },
     },
-  }, "editMessageReplyMarkup");
+    "editMessageReplyMarkup",
+  );
   await reportProcessResult(
     outFile,
     id,
     progressMessageResponse.result.message_id,
-    status.code
+    status.code,
   );
 }
 
@@ -492,7 +573,7 @@ async function reportProcessResult(
   outFile: Deno.FsFile,
   id: string,
   reply_to_message_id: number,
-  exitCode: number
+  exitCode: number,
 ) {
   const outPath = `${tempDir}/${id}.out`;
   const stat = await outFile.stat();
@@ -505,8 +586,8 @@ async function reportProcessResult(
   await fileProc.status();
   const mime = decoder.decode(await fileProc.output());
   contentTypes.set(id, mime);
-  const isText =
-    mime.startsWith("text/") || mime.startsWith("application/json");
+  const isText = mime.startsWith("text/") ||
+    mime.startsWith("application/json");
   let text;
   if (stat.size === 0) text = `No output \\(exit code ${exitCode}\\)\\.`;
   else if (isText && stat.size <= 5000) {
@@ -516,13 +597,14 @@ async function reportProcessResult(
       .replaceAll("`", "\\`");
     if (res.at(-1) !== "\n") res += "\n";
     text = "```\n" + res + "```";
-    if (exitCode !== 0)
+    if (exitCode !== 0) {
       text = `[Exit code ${exitCode}](https://${DOMAIN}/tgweb/${id})\n` + text;
-  } else
-    text =
-      "[" +
+    }
+  } else {
+    text = "[" +
       (isText ? "Output too long" : "Binary output") +
       `](https://${DOMAIN}/tgweb/${id}) \\(exit code ${exitCode}, ${stat.size} bytes\\)\\. Set Content\\-Type with \`/settype ${id} mime/type\``;
+  }
 
   await tgCall({
     reply_to_message_id,
@@ -545,16 +627,17 @@ async function handleCallbackQuery(data: any) {
 }
 
 export async function handleTgWeb(
-  e: Deno.RequestEvent
+  e: Deno.RequestEvent,
 ): Promise<Response | null> {
   const url = new URL(e.request.url);
   const path = url.pathname.slice(7);
   const ct = contentTypes.get(path);
-  if (ct === undefined)
+  if (ct === undefined) {
     return new Response("Not found", {
       headers: { "Content-Type": "text/plain" },
       status: 404,
     });
+  }
 
   const file = await Deno.open(`${tempDir}/${path}.out`);
   return new Response(file.readable, {
@@ -566,25 +649,29 @@ let imageI = 0;
 async function handleInlineQuery(data: any) {
   const { id: inline_query_id, query, from } = data.inline_query;
   console.log(
-    `Logo from ${from.first_name} ${from.last_name} (@${from.username}): ${query}`
+    `Logo from ${from.first_name} ${from.last_name} (@${from.username}): ${query}`,
   );
   const fn = `inline_${imageI++}_${slugify(query)}_${new Date().toISOString()}`;
-  if ((await generateLogos(query, fn)) === 0)
-    await tgCall({
-      inline_query_id,
-      results: [
-        {
-          type: "photo",
-          id: "0",
-          photo_url: `https://${DOMAIN}/persistent/logos/${fn}.png`,
-          thumb_url: `https://${DOMAIN}/persistent/logos/${fn}.png`,
-          photo_width: LOGO_RENDER_SIZE.toString(),
-          photo_height: LOGO_RENDER_SIZE.toString(),
-          title: "Sus?",
-          caption: `https://${DOMAIN}/persistent/logos/${fn}.svg`,
-        },
-      ],
-    }, "answerInlineQuery");
+  if ((await generateLogos(query, fn)) === 0) {
+    await tgCall(
+      {
+        inline_query_id,
+        results: [
+          {
+            type: "photo",
+            id: "0",
+            photo_url: `https://${DOMAIN}/persistent/logos/${fn}.png`,
+            thumb_url: `https://${DOMAIN}/persistent/logos/${fn}.png`,
+            photo_width: LOGO_RENDER_SIZE.toString(),
+            photo_height: LOGO_RENDER_SIZE.toString(),
+            title: "Sus?",
+            caption: `https://${DOMAIN}/persistent/logos/${fn}.svg`,
+          },
+        ],
+      },
+      "answerInlineQuery",
+    );
+  }
 }
 
 async function sticekrThis(orig_msg: any): Promise<string | null> {
@@ -597,15 +684,18 @@ async function sticekrThis(orig_msg: any): Promise<string | null> {
   }
   if (!file) return "not an image file duh";
 
-  const resp = await tgCall({
-    file_id: file,
-  }, "getFile");
+  const resp = await tgCall(
+    {
+      file_id: file,
+    },
+    "getFile",
+  );
   if (!resp.ok) return "telegrams a hoe";
   const data = await resp.json();
   if (!data.ok) return "telegrams a hoe2";
 
   const resp2 = await fetch(
-    `https://api.telegram.org/file/bot${token}/${data.result.file_path}`
+    `https://api.telegram.org/file/bot${token}/${data.result.file_path}`,
   );
   if (!resp2.ok) return "telegram cdn is a hoe";
 
@@ -625,7 +715,7 @@ async function sticekrThis(orig_msg: any): Promise<string | null> {
   body.append("name", STICKER_SET_NAME);
   body.append(
     "sticker",
-    JSON.stringify({ sticker: "attach://file", emoji_list: ["🤓"] })
+    JSON.stringify({ sticker: "attach://file", emoji_list: ["🤓"] }),
   );
   body.append("file", new Blob([sticker], { type: "image/webp" }), "file.webp");
   const resp3 = await fetch(
@@ -633,23 +723,29 @@ async function sticekrThis(orig_msg: any): Promise<string | null> {
     {
       method: "POST",
       body,
-    }
+    },
   );
   if (!resp3.ok) return "skill issue";
 
-  const resp4 = await tgCall({
-    name: STICKER_SET_NAME,
-  }, "getStickerSet");
+  const resp4 = await tgCall(
+    {
+      name: STICKER_SET_NAME,
+    },
+    "getStickerSet",
+  );
   if (!resp4.ok) return "i ran out of error message ideas";
   const data4 = await resp4.json();
   if (!data4.ok) return "i ran out of error message ideas even more";
   const stickerId = data4.result.stickers.at(-1).file_id;
   if (!stickerId) return "i ran out of error message ideas the most";
 
-  const resp5 = await tgCall({
-    chat_id: orig_msg.chat.id,
-    sticker: stickerId,
-  }, "sendSticker");
+  const resp5 = await tgCall(
+    {
+      chat_id: orig_msg.chat.id,
+      sticker: stickerId,
+    },
+    "sendSticker",
+  );
 
   if (!resp5.ok) return "actually it succeeded but i failed to send it";
 
