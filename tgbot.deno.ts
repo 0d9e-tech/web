@@ -52,6 +52,7 @@ async function domeny() {
     )
     .map((x) => x.item_title);
   x.sort();
+  x.sort((a,b)=>a.length - b.length);
   while (x.length > 0) {
     const chunk = x.splice(0, 50);
     await tgCall({
