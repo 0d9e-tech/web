@@ -55,8 +55,9 @@ async function domeny() {
   x.sort((a,b)=>a.length - b.length);
   while (x.length > 0) {
     const chunk = x.splice(0, 50);
+    const webArchiveLinks = chunk.map(l => `[${l}](https://web.archive.org/web/*/${l})`);
     await tgCall({
-      text: chunk.join("\n"),
+      text: webArchiveLinks.join("\n"),
     }).then((x) => x.json());
   }
 }
