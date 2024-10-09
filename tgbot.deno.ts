@@ -58,6 +58,7 @@ async function domeny() {
     const webArchiveLinks = chunk.map(l => `[${l}](https://web.archive.org/web/*/${l})`);
     await tgCall({
       text: webArchiveLinks.join("\n"),
+      parse_mode: "MarkdownV2",
     }).then((x) => x.json());
   }
 }
