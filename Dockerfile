@@ -22,4 +22,4 @@ COPY --from=blog-builder /srv/jekyll/build/ ./static/blog
 ENV PATH "$PATH:/usr/games"
 COPY ./static/amogus.cow /usr/share/cowsay/cows
 
-CMD ["run", "--allow-all", "server.deno.ts"]
+CMD ["sh", "-c", "deno run --allow-all server.deno.ts 2>&1 | tee -a static/persistent/log.txt"]
