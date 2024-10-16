@@ -24,19 +24,26 @@ function genRandomToken(bytes: number) {
 
 const webhookUrlToken = genRandomToken(96);
 
-function tgCall(
+async function tgCall(
   options: any,
   endpoint: string = "sendMessage",
 ): Promise<Response> {
   if (endpoint == "sendMessage") options.chat_id ??= MAIN_CHAT_ID;
 
-  return fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
+  let req = await fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(options),
   });
+  try {
+    let resp = await req.json();
+    if (!resp.ok) {
+      console.log("Req to", endpoint, "with", options, "failed:", resp);
+    }
+  } catch (e) {}
+  return req;
 }
 
 async function domeny() {
@@ -52,7 +59,7 @@ async function domeny() {
     )
     .map((x) => x.item_title);
   x.sort();
-  x.sort((a,b)=>a.length - b.length);
+  x.sort((a, b) => a.length - b.length);
   while (x.length > 0) {
     const chunk = x.splice(0, 50);
     const webArchiveLinks = chunk.map(l => `[${l}](https://web.archive.org/web/*/${l})`);
@@ -101,14 +108,11 @@ async function postGeohash() {
       geoHash,
     ])
   })\\.\nPlease refer to xkcd\\.com/426/ for further steps\\.`;
-  console.log(text);
 
   await tgCall({
     text,
     parse_mode: "MarkdownV2",
-  })
-    .then((x) => x.json())
-    .then(console.log);
+  });
 
   await domeny();
 
