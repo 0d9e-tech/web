@@ -42,6 +42,7 @@ async function tgCall(
     if (!resp.ok) {
       console.log("Req to", endpoint, "with", options, "failed:", resp);
     }
+    return resp;
   } catch (e) {}
   return req;
 }
@@ -62,11 +63,13 @@ async function domeny() {
   x.sort((a, b) => a.length - b.length);
   while (x.length > 0) {
     const chunk = x.splice(0, 50);
-    const webArchiveLinks = chunk.map(l => `[${l}](https://web.archive.org/web/*/${l})`);
+    const webArchiveLinks = chunk.map((l) =>
+      `[${l}](https://web.archive.org/web/*/${l})`
+    );
     await tgCall({
       text: webArchiveLinks.join("\n"),
       parse_mode: "MarkdownV2",
-    }).then((x) => x.json());
+    });
   }
 }
 
@@ -343,13 +346,11 @@ One guy, Linus Torvalds, used GCC to make his operating system (yes, Linux is an
 (An operating system) != (a distribution). Linux is an operating system. By my definition, an operating system is that software which provides and limits access to hardware resources on a computer. That definition applies whereever you see Linux in use. However, Linux is usually distributed with a collection of utilities and applications to make it easily configurable as a desktop system, a server, a development box, or a graphics workstation, or whatever the user needs. In such a configuration, we have a Linux (based) distribution. Therein lies your strongest argument for the unwieldy title 'GNU/Linux' (when said bundled software is largely from the FSF). Go bug the distribution makers on that one. Take your beef to Red Hat, Mandrake, and Slackware. At least there you have an argument. Linux alone is an operating system that can be used in various applications without any GNU software whatsoever. Embedded applications come to mind as an obvious example.`,
     });
 
-    const m1 = await r1.json();
-
-    if (m1.ok) {
+    if (r1.ok) {
       await new Promise((resolve) => setTimeout(resolve, 4000));
       await tgCall({
         chat_id: data.message.chat.id,
-        reply_to_message_id: m1.result.message_id,
+        reply_to_message_id: r1.result.message_id,
         text:
           `Next, even if we limit the GNU/Linux title to the GNU-based Linux distributions, we run into another obvious problem. XFree86 may well be more important to a particular Linux installation than the sum of all the GNU contributions. More properly, shouldn't the distribution be called XFree86/Linux? Or, at a minimum, XFree86/GNU/Linux? Of course, it would be rather arbitrary to draw the line there when many other fine contributions go unlisted. Yes, I know you've heard this one before. Get used to it. You'll keep hearing it until you can cleanly counter it.
 
@@ -554,7 +555,7 @@ async function handleSh(data: any, cmd: string) {
         ],
       ],
     },
-  }).then((x) => x.json());
+  });
 
   const status = await proc.status();
   runningProcesses.delete(id);
@@ -691,14 +692,12 @@ async function sticekrThis(orig_msg: any): Promise<string | null> {
   }
   if (!file) return "not an image file duh";
 
-  const resp = await tgCall(
+  const data = await tgCall(
     {
       file_id: file,
     },
     "getFile",
   );
-  if (!resp.ok) return "telegrams a hoe";
-  const data = await resp.json();
   if (!data.ok) return "telegrams a hoe2";
 
   const resp2 = await fetch(
@@ -734,15 +733,13 @@ async function sticekrThis(orig_msg: any): Promise<string | null> {
   );
   if (!resp3.ok) return "skill issue";
 
-  const resp4 = await tgCall(
+  const data4 = await tgCall(
     {
       name: STICKER_SET_NAME,
     },
     "getStickerSet",
   );
-  if (!resp4.ok) return "i ran out of error message ideas";
-  const data4 = await resp4.json();
-  if (!data4.ok) return "i ran out of error message ideas even more";
+  if (!data4.ok) return "i ran out of error message ideas";
   const stickerId = data4.result.stickers.at(-1).file_id;
   if (!stickerId) return "i ran out of error message ideas the most";
 
