@@ -58,13 +58,14 @@ async function domeny() {
       (a) =>
         a.auction_from.split("T")[0] === new Date().toISOString().split("T")[0],
     )
-    .map((x) => x.item_title);
+    .map((x) => x.item_title)
+    .map((x) => x.replaceAll(".", "\\."));
   x.sort();
   x.sort((a, b) => a.length - b.length);
   while (x.length > 0) {
     const chunk = x.splice(0, 50);
-    const webArchiveLinks = chunk.map((l) =>
-      `[${l}](https://web.archive.org/web/*/${l})`
+    const webArchiveLinks = chunk.map(
+      (l) => `[${l}](https://web.archive.org/web/${l})`,
     );
     await tgCall({
       text: webArchiveLinks.join("\n"),
@@ -164,7 +165,12 @@ export async function init() {
     {
       url: `https://${DOMAIN}${webhookPath}`,
       secret_token: webhookUrlToken,
-      allowed_updates: ["message", "callback_query", "inline_query"],
+      allowed_updates: [
+        "message",
+        "callback_query",
+        "inline_query",
+        "edited_message",
+      ],
     },
     "setWebhook",
   );
@@ -211,6 +217,9 @@ export async function handleRequest(e: Deno.RequestEvent) {
 async function processTgUpdate(data: any) {
   if ("callback_query" in data) return await handleCallbackQuery(data);
   if ("inline_query" in data) return await handleInlineQuery(data);
+  if ("edited_message" in data) {
+    data.message = data.edited_message;
+  }
 
   const text = data?.message?.text ?? data?.message?.caption;
   if (typeof text !== "string") return;
