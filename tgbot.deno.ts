@@ -59,7 +59,7 @@ async function domeny() {
         a.auction_from.split("T")[0] === new Date().toISOString().split("T")[0],
     )
     .map((x) => x.item_title)
-    .map((x) => x.replaceAll(".", "\\."));
+    .map((x) => x.replaceAll(/[_*[\\\]()~`>#+=|{}.!/-]/g, ($) => `\\${$}`));
   x.sort();
   x.sort((a, b) => a.length - b.length);
   while (x.length > 0) {
