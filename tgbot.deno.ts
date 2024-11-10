@@ -51,22 +51,25 @@ async function domeny() {
   const resp = await fetch(
     "https://auctions-master.nic.cz/share/new_auctions.json",
   );
-  const list = await resp.json();
+  let list = await resp.json();
 
-  const x = list
+  list = list
     .filter(
       (a) =>
         a.auction_from.split("T")[0] === new Date().toISOString().split("T")[0],
     )
-    .map((x) => x.item_title)
-    .map((x) => x.replaceAll(/[_*[\\\]()~`>#+=|{}.!/-]/g, ($) => `\\${$}`));
-  x.sort();
-  x.sort((a, b) => a.length - b.length);
-  while (x.length > 0) {
-    const chunk = x.splice(0, 50);
-    const webArchiveLinks = chunk.map(
-      (l) => `[${l}](https://web.archive.org/web/${l})`,
-    );
+    .map((x) => x.item_title);
+  list.sort();
+  list.sort((a, b) => a.length - b.length);
+  list = list.filter((x) => x.length <= 8).concat(list.slice(-20));
+  console.log(list);
+  while (list.length > 0) {
+    const chunk = list.splice(0, 50);
+    const webArchiveLinks = chunk
+      .map((x) => x.replaceAll(/[_*[\\\]()~`>#+=|{}.!/-]/g, ($) => `\\${$}`))
+      .map(
+        (l) => `[${l}](https://web.archive.org/web/${l})`,
+      );
     await tgCall({
       text: webArchiveLinks.join("\n"),
       parse_mode: "MarkdownV2",
