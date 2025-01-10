@@ -317,6 +317,14 @@ async function processTgUpdate(data: any) {
     );
   }
 
+  if (text.toLowerCase().includes("pivo")) {
+    await tgCall({
+      chat_id: data.message.chat.id,
+      sticker:
+        "CAACAgQAAxUAAWeBX6jI8a_GFYMipcEDK3cpZW0hAAI7FQACdWMQUHHysL9Zw-JuNgQ",
+    }, "sendSticker");
+  }
+
   if (
     text.toLowerCase().includes("regiojet") ||
     text.toLowerCase().includes("php")
