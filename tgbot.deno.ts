@@ -349,6 +349,13 @@ async function processTgUpdate(data: any) {
     });
   }
 
+  if (text.toLowerCase().includes("hrovno")) {
+    await tgCall({
+      chat_id: data.message.chat.id,
+      text: `Pánové, toto je certifikované hrovno. Miluji hrovno. Co je hrovnové, to je suprové. Hrovnový moment.`,
+    });
+  }
+
   if (
     text.toLowerCase().includes("gnu") &&
     text.toLowerCase().includes("linux")
