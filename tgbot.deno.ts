@@ -8,8 +8,8 @@ import { getImageForPoints, getUrlForPoints } from "./mapycz.deno.ts";
 const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN");
-const STICKER_SET_NAME = Deno.env.get("STICKER_SET_NAME");
-const STICKER_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
+const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME");
+const STICEKR_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
 
 export const webhookPath = "/tg-webhook";
 
@@ -70,10 +70,24 @@ async function domeny() {
       .map(
         (l) => `[${l}](https://web.archive.org/web/${l})`,
       );
+    processTgUpdate(
+      await tgCall({
+        text: webArchiveLinks.join("\n"),
+        parse_mode: "MarkdownV2",
+      }),
+    );
+  }
+
+  if (Math.random() < 0.5) {
+    const { result: { stickers: sticekrs } } = await tgCall({
+      name: STICEKR_SET_NAME,
+    }, "getStickerSet");
+    const { file_id: sticekr } =
+      sticekrs[Math.floor(Math.random() * sticekrs.length)];
     await tgCall({
-      text: webArchiveLinks.join("\n"),
-      parse_mode: "MarkdownV2",
-    });
+      chat_id: MAIN_CHAT_ID,
+      sticker: sticekr,
+    }, "sendSticker");
   }
 }
 
@@ -150,14 +164,14 @@ export async function init() {
     !token ||
     !DOMAIN ||
     isNaN(MAIN_CHAT_ID) ||
-    !STICKER_SET_NAME ||
-    isNaN(STICKER_SET_OWNER)
+    !STICEKR_SET_NAME ||
+    isNaN(STICEKR_SET_OWNER)
   ) {
     console.log(
-      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICKER_SET_NAME: ${STICKER_SET_NAME}, STICKER_SET_OWNER: ${STICKER_SET_OWNER}`,
+      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICEKR_SET_NAME: ${STICEKR_SET_NAME}, STICEKR_SET_OWNER: ${STICEKR_SET_OWNER}`,
     );
     throw new Error(
-      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICKER_SET_NAME or STICKER_SET_OWNER is not set",
+      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICEKR_SET_NAME or STICEKR_SET_OWNER is not set",
     );
   }
 
@@ -180,7 +194,7 @@ export async function init() {
 
   await tgCall({
     text:
-      "Babes wakeup, novy shitpost prave dropnul (nebo jenom matej restartoval vpsku)",
+      "Babes wakeup, novy shitpost prave dropnul (nebo jenom adam zase ukradnul token)",
   });
 
   postGeohash();
@@ -218,8 +232,23 @@ export async function handleRequest(e: Deno.RequestEvent) {
 }
 
 async function processTgUpdate(data: any) {
-  if ("callback_query" in data) return await handleCallbackQuery(data);
-  if ("inline_query" in data) return await handleInlineQuery(data);
+  for await (const dato of handleTgUpdate(data)) {
+    for await (const data of handleTgUpdate(dato)) {
+      for await (const dato of handleTgUpdate(data)) {
+        for await (const data of handleTgUpdate(dato)) {
+          for await (const dato of handleTgUpdate(data)) {
+            tgCall({ text: "🔥" });
+          }
+        }
+      }
+    }
+  }
+}
+
+async function* handleTgUpdate(data: any) {
+  data.message ??= data.result;
+  if ("callback_query" in data) return yield* handleCallbackQuery(data);
+  if ("inline_query" in data) return yield* handleInlineQuery(data);
   if ("edited_message" in data) {
     data.message = data.edited_message;
   }
@@ -261,33 +290,11 @@ async function processTgUpdate(data: any) {
   }
 
   if (text.startsWith("/sh ") && data.message.chat.id === MAIN_CHAT_ID) {
-    handleSh(data, text.slice(4));
-  }
-
-  if (text === "/kdo") {
-    const reply_id = data.message.reply_to_message?.message_id;
-    await tgCall(
-      {
-        chat_id: data.message.chat.id,
-        message_id: data.message.message_id,
-      },
-      "deleteMessage",
-    );
-    if (reply_id !== undefined) {
-      await tgCall(
-        {
-          chat_id: data.message.chat.id,
-          reply_parameters: { message_id: reply_id },
-          video:
-            "BAACAgQAAxkDAANmZb5XjJUES6VCvJGtIRRrKMGwRpcAAq0SAAINl_BR5jVZOMRHxCI0BA",
-        },
-        "sendVideo",
-      );
-    }
+    yield* handleSh(data, text.slice(4));
   }
 
   if (text.includes("@yall") && data.message.chat.id === MAIN_CHAT_ID) {
-    await tgCall({
+    yield await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
       parse_mode: "MarkdownV2",
@@ -296,7 +303,7 @@ async function processTgUpdate(data: any) {
   }
 
   if (text.toLowerCase().includes("balls")) {
-    await tgCall(
+    yield await tgCall(
       {
         chat_id: data.message.chat.id,
         video_note:
@@ -307,7 +314,7 @@ async function processTgUpdate(data: any) {
   }
 
   if (text.toLowerCase().includes("doslova")) {
-    await tgCall(
+    yield await tgCall(
       {
         chat_id: data.message.chat.id,
         sticker:
@@ -318,32 +325,15 @@ async function processTgUpdate(data: any) {
   }
 
   if (text.toLowerCase().includes("pivo")) {
-    await tgCall({
+    yield await tgCall({
       chat_id: data.message.chat.id,
       sticker:
         "CAACAgQAAxUAAWeBX6jI8a_GFYMipcEDK3cpZW0hAAI7FQACdWMQUHHysL9Zw-JuNgQ",
     }, "sendSticker");
   }
 
-  if (
-    text.toLowerCase().includes("regiojet") ||
-    text.toLowerCase().includes("php")
-  ) {
-    await tgCall(
-      {
-        chat_id: data.message.chat.id,
-        message_id: data.message.message_id,
-      },
-      "deleteMessage",
-    );
-    await tgCall({
-      chat_id: data.message.chat.id,
-      text: `rule violation by ${data.message.from.first_name} detected`,
-    });
-  }
-
   if (text.toLowerCase().includes("zig")) {
-    await tgCall({
+    yield await tgCall({
       chat_id: data.message.chat.id,
       text: `Hail!`,
     });
@@ -352,13 +342,15 @@ async function processTgUpdate(data: any) {
   if (text.toLowerCase().includes("hrovno")) {
     await tgCall({
       chat_id: data.message.chat.id,
-      text: `Pánové, toto je certifikované hrovno. Miluji hrovno. Co je hrovnové, to je suprové. Hrovnový moment.`,
+      text:
+        `Pánové, toto je certifikované hrovno. Miluji hrovno. Co je hrovnové, to je suprové. Hrovnový moment.`,
     });
   }
 
   if (
     text.toLowerCase().includes("gnu") &&
-    text.toLowerCase().includes("linux")
+    text.toLowerCase().includes("linux") &&
+    !text.includes("the Free Software Foundation")
   ) {
     const r1 = await tgCall({
       chat_id: data.message.chat.id,
@@ -372,10 +364,10 @@ One guy, Linus Torvalds, used GCC to make his operating system (yes, Linux is an
 
 (An operating system) != (a distribution). Linux is an operating system. By my definition, an operating system is that software which provides and limits access to hardware resources on a computer. That definition applies whereever you see Linux in use. However, Linux is usually distributed with a collection of utilities and applications to make it easily configurable as a desktop system, a server, a development box, or a graphics workstation, or whatever the user needs. In such a configuration, we have a Linux (based) distribution. Therein lies your strongest argument for the unwieldy title 'GNU/Linux' (when said bundled software is largely from the FSF). Go bug the distribution makers on that one. Take your beef to Red Hat, Mandrake, and Slackware. At least there you have an argument. Linux alone is an operating system that can be used in various applications without any GNU software whatsoever. Embedded applications come to mind as an obvious example.`,
     });
-
+    yield r1;
     if (r1.ok) {
       await new Promise((resolve) => setTimeout(resolve, 4000));
-      await tgCall({
+      yield await tgCall({
         chat_id: data.message.chat.id,
         reply_to_message_id: r1.result.message_id,
         text:
@@ -393,7 +385,7 @@ Be grateful for your abilities and your incredible success and your considerable
   }
 
   if (/\barch(?![ií][a-z])/i.exec(text) && data.message.from.id === 656461353) {
-    await tgCall({
+    yield await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
       text: "Ano Mariane, my víme",
@@ -401,7 +393,7 @@ Be grateful for your abilities and your incredible success and your considerable
   }
 
   if (text === "/inspect") {
-    await tgCall({
+    yield await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
       parse_mode: "MarkdownV2",
@@ -423,16 +415,16 @@ Be grateful for your abilities and your incredible success and your considerable
   }
 
   if (text.startsWith("/logo ") && data.message.chat.id === MAIN_CHAT_ID) {
-    await handleLogo(data, text.slice(6));
+    yield* handleLogo(data, text.slice(6));
   }
 
   if (
     text.toLowerCase() === "sticker this" &&
     data.message.chat.id === MAIN_CHAT_ID
   ) {
-    const result = await sticekrThis(data.message.reply_to_message);
+    const result = yield* sticekrThis(data.message.reply_to_message);
     if (result !== null) {
-      await tgCall({
+      yield await tgCall({
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
         text: `Not even your mom could make a sticker out of that (${result})`,
@@ -473,7 +465,7 @@ Be grateful for your abilities and your incredible success and your considerable
     }
 
     if (text) {
-      await tgCall({
+      yield await tgCall({
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
         text,
@@ -483,9 +475,48 @@ Be grateful for your abilities and your incredible success and your considerable
   }
 
   if (text.toLowerCase().includes("sus")) {
-    await tgCall({
+    yield await tgCall({
       chat_id: data.message.chat.id,
       text: "ඞ",
+    });
+  }
+
+  if (text === "/kdo") {
+    const reply_id = data.message.reply_to_message?.message_id;
+    await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        message_id: data.message.message_id,
+      },
+      "deleteMessage",
+    );
+    if (reply_id !== undefined) {
+      yield await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          reply_parameters: { message_id: reply_id },
+          video:
+            "BAACAgQAAxkDAANmZb5XjJUES6VCvJGtIRRrKMGwRpcAAq0SAAINl_BR5jVZOMRHxCI0BA",
+        },
+        "sendVideo",
+      );
+    }
+  }
+
+  if (
+    text.toLowerCase().includes("regiojet") ||
+    text.toLowerCase().includes("php")
+  ) {
+    await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        message_id: data.message.message_id,
+      },
+      "deleteMessage",
+    );
+    yield await tgCall({
+      chat_id: data.message.chat.id,
+      text: `rule violation by ${data.message.from.first_name} detected`,
     });
   }
 }
@@ -519,10 +550,10 @@ function slugify(text: string) {
     .replaceAll(/[^a-z0-9_-]/gi, (x) => "0x" + x.charCodeAt(0).toString(16));
 }
 
-async function handleLogo(data: any, text: string) {
+async function* handleLogo(data: any, text: string) {
   const fn = `${slugify(text)}_${new Date().toISOString()}`;
   if ((await generateLogos(text, fn)) === 0) {
-    await tgCall(
+    yield await tgCall(
       {
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
@@ -534,7 +565,7 @@ async function handleLogo(data: any, text: string) {
   }
 }
 
-async function handleSh(data: any, cmd: string) {
+async function* handleSh(data: any, cmd: string) {
   const id = genRandomToken(32);
   await Deno.writeFile(`${tempDir}/${id}.sh`, new TextEncoder().encode(cmd), {
     createNew: true,
@@ -555,7 +586,7 @@ async function handleSh(data: any, cmd: string) {
   ]);
 
   if (raceResult !== undefined) {
-    await reportProcessResult(
+    yield* reportProcessResult(
       outFile,
       id,
       data.message.message_id,
@@ -583,11 +614,12 @@ async function handleSh(data: any, cmd: string) {
       ],
     },
   });
+  yield progressMessageResponse;
 
   const status = await proc.status();
   runningProcesses.delete(id);
 
-  await tgCall(
+  yield await tgCall(
     {
       message_id: progressMessageResponse.result.message_id,
       reply_markup: {
@@ -604,7 +636,7 @@ async function handleSh(data: any, cmd: string) {
   );
 }
 
-async function reportProcessResult(
+async function* reportProcessResult(
   outFile: Deno.FsFile,
   id: string,
   reply_to_message_id: number,
@@ -641,7 +673,7 @@ async function reportProcessResult(
       `](https://${DOMAIN}/tgweb/${id}) \\(exit code ${exitCode}, ${stat.size} bytes\\)\\. Set Content\\-Type with \`/settype ${id} mime/type\``;
   }
 
-  await tgCall({
+  yield await tgCall({
     reply_to_message_id,
     parse_mode: "MarkdownV2",
     text,
@@ -681,14 +713,14 @@ export async function handleTgWeb(
 }
 
 let imageI = 0;
-async function handleInlineQuery(data: any) {
+async function* handleInlineQuery(data: any) {
   const { id: inline_query_id, query, from } = data.inline_query;
   console.log(
     `Logo from ${from.first_name} ${from.last_name} (@${from.username}): ${query}`,
   );
   const fn = `inline_${imageI++}_${slugify(query)}_${new Date().toISOString()}`;
   if ((await generateLogos(query, fn)) === 0) {
-    await tgCall(
+    yield await tgCall(
       {
         inline_query_id,
         results: [
@@ -709,7 +741,7 @@ async function handleInlineQuery(data: any) {
   }
 }
 
-async function sticekrThis(orig_msg: any): Promise<string | null> {
+async function* sticekrThis(orig_msg: any): Promise<string | null> {
   if (!orig_msg) return "wtf";
   let file;
   if (Array.isArray(orig_msg.photo)) {
@@ -741,16 +773,16 @@ async function sticekrThis(orig_msg: any): Promise<string | null> {
   });
   const res = await cmd.output();
   if (res.code !== 0) return "imagemagick is a hoe";
-  const sticker = await Deno.readFile(outFileName);
+  const sticekr = await Deno.readFile(outFileName);
 
   const body = new FormData();
-  body.append("user_id", STICKER_SET_OWNER.toString());
-  body.append("name", STICKER_SET_NAME);
+  body.append("user_id", STICEKR_SET_OWNER.toString());
+  body.append("name", STICEKR_SET_NAME);
   body.append(
     "sticker",
     JSON.stringify({ sticker: "attach://file", emoji_list: ["🤓"] }),
   );
-  body.append("file", new Blob([sticker], { type: "image/webp" }), "file.webp");
+  body.append("file", new Blob([sticekr], { type: "image/webp" }), "file.webp");
   const resp3 = await fetch(
     `https://api.telegram.org/bot${token}/addStickerToSet`,
     {
@@ -762,21 +794,22 @@ async function sticekrThis(orig_msg: any): Promise<string | null> {
 
   const data4 = await tgCall(
     {
-      name: STICKER_SET_NAME,
+      name: STICEKR_SET_NAME,
     },
     "getStickerSet",
   );
   if (!data4.ok) return "i ran out of error message ideas";
-  const stickerId = data4.result.stickers.at(-1).file_id;
-  if (!stickerId) return "i ran out of error message ideas the most";
+  const sticekrId = data4.result.stickers.at(-1).file_id;
+  if (!sticekrId) return "i ran out of error message ideas the most";
 
   const resp5 = await tgCall(
     {
       chat_id: orig_msg.chat.id,
-      sticker: stickerId,
+      sticker: sticekrId,
     },
     "sendSticker",
   );
+  yield resp5;
 
   if (!resp5.ok) return "actually it succeeded but i failed to send it";
 
