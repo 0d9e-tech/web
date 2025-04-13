@@ -192,6 +192,7 @@ export async function init() {
     "setWebhook",
   );
 
+  if (new Date() > new Date("2025-04-20"))
   await tgCall({
     text:
       "Babes wakeup, novy shitpost prave dropnul (nebo jenom adam zase ukradnul token)",
