@@ -510,7 +510,17 @@ Be grateful for your abilities and your incredible success and your considerable
     {
       "trigger": "Zig",
       "genitiv": "Zigu",
-      "popis": "Zig je jenom glorified C a měl by být zakázán",
+      "popis": "Zig je jenom glorified C a mělo by být zakázáno",
+    },
+    {
+      "trigger": "Rust",
+      "genitiv": "Rustu",
+      "popis": "Rust je jenom glorified C++ a měl by být zakázán",
+    },
+    {
+      "trigger": "prdění",
+      "genitiv": "prdění",
+      "popis": "Prdění je jenom zbabělé sraní a mělo by být zakázáno",
     },
   ];
 
