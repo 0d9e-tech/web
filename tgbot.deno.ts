@@ -192,7 +192,6 @@ export async function init() {
     "setWebhook",
   );
 
-  if (new Date() > new Date("2025-04-20"))
   await tgCall({
     text:
       "Babes wakeup, novy shitpost prave dropnul (nebo jenom adam zase ukradnul token)",
@@ -331,13 +330,6 @@ async function* handleTgUpdate(data: any) {
       sticker:
         "CAACAgQAAxUAAWeBX6jI8a_GFYMipcEDK3cpZW0hAAI7FQACdWMQUHHysL9Zw-JuNgQ",
     }, "sendSticker");
-  }
-
-  if (text.toLowerCase().includes("zig")) {
-    yield await tgCall({
-      chat_id: data.message.chat.id,
-      text: `Hail!`,
-    });
   }
 
   if (text.toLowerCase().includes("hrovno")) {
@@ -504,21 +496,43 @@ Be grateful for your abilities and your incredible success and your considerable
     }
   }
 
-  if (
-    text.toLowerCase().includes("regiojet") ||
-    text.toLowerCase().includes("php")
-  ) {
-    await tgCall(
-      {
+  const bannedWords = [
+    {
+      "trigger": "Regiojet",
+      "genitiv": "Regiojetu",
+      "popis": "Regiojet je objektivně špatný dopravce",
+    },
+    {
+      "trigger": "PHP",
+      "genitiv": "PHP",
+      "popis": "psaní PHP by mělo být krimiálně trestáno",
+    },
+    {
+      "trigger": "Zig",
+      "genitiv": "Zigu",
+      "popis": "Zig je jenom glorified C a mělo by být zakázáno",
+    },
+  ];
+
+  for (const { trigger, genitiv, popis } of bannedWords) {
+    const disclaimer =
+      `Upozornění: Tato zpráva obsahuje ${trigger}. Jsem si vědom tohoto prohřešku, ${popis} a tato zpáva nesmí být interpretována jako podpora ${genitiv}.`;
+    if (text.includes(disclaimer)) continue;
+
+    if (text.toLowerCase().includes(trigger.toLowerCase())) {
+      await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          message_id: data.message.message_id,
+        },
+        "deleteMessage",
+      );
+      yield await tgCall({
         chat_id: data.message.chat.id,
-        message_id: data.message.message_id,
-      },
-      "deleteMessage",
-    );
-    yield await tgCall({
-      chat_id: data.message.chat.id,
-      text: `rule violation by ${data.message.from.first_name} detected`,
-    });
+        text:
+          `Zjištěno porušení pravidel uživatelem ${data.message.from.first_name}, tento incident byl zaznamenán. Příště prosím přidejte do zprávy tento disclaimer:\n\n${disclaimer}`,
+      });
+    }
   }
 }
 
