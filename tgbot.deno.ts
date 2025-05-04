@@ -510,7 +510,7 @@ Be grateful for your abilities and your incredible success and your considerable
     {
       "trigger": "Zig",
       "genitiv": "Zigu",
-      "popis": "Zig je jenom glorified C a mělo by být zakázáno",
+      "popis": "Zig je jenom glorified C a měl by být zakázán",
     },
   ];
 
