@@ -514,6 +514,7 @@ Be grateful for your abilities and your incredible success and your considerable
     },
     {
       "trigger": "Rust",
+      "regex": /R[uů]st/i,
       "genitiv": "Rustu",
       "popis": "Rust je jenom glorified C++ a měl by být zakázán",
     },
@@ -524,12 +525,16 @@ Be grateful for your abilities and your incredible success and your considerable
     },
   ];
 
-  for (const { trigger, genitiv, popis } of bannedWords) {
+  for (const { trigger, genitiv, popis, regex } of bannedWords) {
     const disclaimer =
       `Upozornění: Tato zpráva obsahuje ${trigger}. Jsem si vědom tohoto prohřešku, ${popis} a tato zpáva nesmí být interpretována jako podpora ${genitiv}.`;
     if (text.includes(disclaimer)) continue;
 
-    if (text.toLowerCase().includes(trigger.toLowerCase())) {
+    if (
+      regex
+        ? text.match(regex)
+        : text.toLowerCase().includes(trigger.toLowerCase())
+    ) {
       await tgCall(
         {
           chat_id: data.message.chat.id,
