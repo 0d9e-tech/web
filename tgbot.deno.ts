@@ -514,20 +514,20 @@ Be grateful for your abilities and your incredible success and your considerable
     },
     {
       "trigger": "Rust",
-      "regex": /R[uů]st/i,
+      "regex": /\br[uů]st/i,
       "genitiv": "Rustu",
       "popis": "Rust je jenom glorified C++ a měl by být zakázán",
     },
     {
       "trigger": "prdění",
       "genitiv": "prdění",
-      "popis": "Prdění je jenom zbabělé sraní a mělo by být zakázáno",
+      "popis": "prdění je jenom zbabělé sraní a mělo by být zakázáno",
     },
   ];
 
   for (const { trigger, genitiv, popis, regex } of bannedWords) {
     const disclaimer =
-      `Upozornění: Tato zpráva obsahuje ${trigger}. Jsem si vědom tohoto prohřešku, ${popis} a tato zpáva nesmí být interpretována jako podpora ${genitiv}.`;
+      `Upozornění: Tato zpáva obsahuje ${trigger}. Jsem si vědom tohoto prohřešku, ${popis} a tato zpáva nesmí být interpretována jako podpora ${genitiv}.`;
     if (text.includes(disclaimer)) continue;
 
     if (
@@ -545,7 +545,7 @@ Be grateful for your abilities and your incredible success and your considerable
       yield await tgCall({
         chat_id: data.message.chat.id,
         text:
-          `Zjištěno porušení pravidel uživatelem ${data.message.from.first_name}, tento incident byl zaznamenán. Příště prosím přidejte do zprávy tento disclaimer:\n\n${disclaimer}`,
+          `Zjištěno porušení pravidel uživatelem ${data.message.from.first_name}, tento incident byl zaznamenán. Příště prosím přidejte do zpávy tento disclaimer:\n\n${disclaimer}`,
       });
     }
   }
