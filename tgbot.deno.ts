@@ -194,7 +194,7 @@ export async function init() {
 
   await tgCall({
     text:
-      "Babes wakeup, novy shitpost prave dropnul (nebo jenom adam zase ukradnul token)",
+      "prokop hazejici vlastovku",
   });
 
   postGeohash();
