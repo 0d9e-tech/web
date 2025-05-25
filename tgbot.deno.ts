@@ -246,6 +246,7 @@ async function processTgUpdate(data: any) {
 }
 
 async function* handleTgUpdate(data: any) {
+  const {ok} = data;
   data.message ??= data.result;
   if ("callback_query" in data) return yield* handleCallbackQuery(data);
   if ("inline_query" in data) return yield* handleInlineQuery(data);
@@ -547,6 +548,18 @@ Be grateful for your abilities and your incredible success and your considerable
         text:
           `Zjištěno porušení pravidel uživatelem ${data.message.from.first_name}, tento incident byl zaznamenán. Příště prosím přidejte do zpávy tento disclaimer:\n\n${disclaimer}`,
       });
+      if(ok) {
+        yield await tgCall({
+          chat_id: data.message.chat.id,
+          text: "oh shit sry mb",
+        });
+        yield await tgCall({
+          chat_id: data.message.chat.id,
+          text: data.message.text + "\n\n" + disclaimer,
+          entities: data.message.entities,
+        });
+      }
+      break;
     }
   }
 }
