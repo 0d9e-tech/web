@@ -193,8 +193,7 @@ export async function init() {
   );
 
   await tgCall({
-    text:
-      "prokop hazejici vlastovku",
+    text: "prokop hazejici vlastovku",
   });
 
   postGeohash();
@@ -246,7 +245,7 @@ async function processTgUpdate(data: any) {
 }
 
 async function* handleTgUpdate(data: any) {
-  const {ok} = data;
+  const { ok } = data;
   data.message ??= data.result;
   if ("callback_query" in data) return yield* handleCallbackQuery(data);
   if ("inline_query" in data) return yield* handleInlineQuery(data);
@@ -396,7 +395,7 @@ Be grateful for your abilities and your incredible success and your considerable
           data.message.reply_to_message,
           null,
           2,
-        )
+        ).replaceAll("\\", "\\\\")
       }\n\`\`\``,
     });
   }
@@ -548,7 +547,7 @@ Be grateful for your abilities and your incredible success and your considerable
         text:
           `Zjištěno porušení pravidel uživatelem ${data.message.from.first_name}, tento incident byl zaznamenán. Příště prosím přidejte do zpávy tento disclaimer:\n\n${disclaimer}`,
       });
-      if(ok) {
+      if (ok) {
         yield await tgCall({
           chat_id: data.message.chat.id,
           text: "oh shit sry mb",
@@ -559,7 +558,6 @@ Be grateful for your abilities and your incredible success and your considerable
           entities: data.message.entities,
         });
       }
-      break;
     }
   }
 }
@@ -800,12 +798,12 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
     },
     "getFile",
   );
-  if (!data.ok) return "telegrams a hoe2";
+  if (!data.ok) return "telegrams a hoe: " + JSON.stringify(data);
 
   const resp2 = await fetch(
     `https://api.telegram.org/file/bot${token}/${data.result.file_path}`,
   );
-  if (!resp2.ok) return "telegram cdn is a hoe";
+  if (!resp2.ok) return "telegram cdn is a hoe: " + await resp2.text();
 
   const fileName = await Deno.makeTempFile();
   await Deno.writeFile(fileName, resp2.body!);
@@ -833,7 +831,7 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
       body,
     },
   );
-  if (!resp3.ok) return "skill issue";
+  if (!resp3.ok) return "skill issue: " + await resp3.text();
 
   const data4 = await tgCall(
     {
@@ -841,7 +839,9 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
     },
     "getStickerSet",
   );
-  if (!data4.ok) return "i ran out of error message ideas";
+  if (!data4.ok) {
+    return "i ran out of error message ideas: " + JSON.stringify(resp4);
+  }
   const sticekrId = data4.result.stickers.at(-1).file_id;
   if (!sticekrId) return "i ran out of error message ideas the most";
 
@@ -854,7 +854,10 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
   );
   yield resp5;
 
-  if (!resp5.ok) return "actually it succeeded but i failed to send it";
+  if (!resp5.ok) {
+    return "actually it succeeded but i failed to send it: " +
+      JSON.stringify(resp5);
+  }
 
   return null;
 }
