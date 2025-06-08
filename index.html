@@ -8,6 +8,18 @@
     <title data-l10n-id="neterror-dns-not-found-title">Server Not Found</title>
     <link rel="stylesheet" href="/aboutNetError.css" type="text/css" media="all">
     <link rel="icon" id="favicon" href="info.svg">
+    <style>
+  #neterrorTryAgainButton {
+    position: relative;
+    transition: left 0.2s, top 0.2s;
+  }
+
+  #neterrorTryAgainButton:hover {
+    left: calc(-30px + 60px * random());
+    top: calc(-10px + 20px * random());
+  }
+</style>
+
   </head>
   <body class="neterror">
     <div class="container">
@@ -86,4 +98,26 @@
         </div>
       </div>
     </div>
+<script>
+  const btn = document.getElementById("neterrorTryAgainButton");
+  const container = document.querySelector(".container");
+
+  btn.style.position = "absolute";
+
+  btn.addEventListener("mouseover", () => {
+    const containerRect = container.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+
+    const maxX = containerRect.width - btnRect.width;
+    const maxY = containerRect.height - btnRect.height;
+
+    const newX = Math.random() * maxX;
+    const newY = Math.random() * maxY;
+
+    btn.style.left = `${newX}px`;
+    btn.style.top = `${newY}px`;
+  });
+
+</script>
+
 </body></html>
