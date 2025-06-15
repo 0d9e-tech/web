@@ -1,126 +1,87 @@
-// The authors disclaim copyright to this source code (they are ashamed to
-// admit they wrote it)
-
-const alphabet = [
-  "0",
-  "A",
-  "B",
-  "C",
-  "D",
-  "2",
-  "E",
-  "F",
-  "G",
-  "H",
-  "4",
-  "I",
-  "J",
-  "K",
-  "L",
-  "M",
-  "N",
-  "6",
-  "O",
-  "P",
-  "Q",
-  "R",
-  "S",
-  "T",
-  "8",
-  "U",
-  "V",
-  "W",
-  "X",
-  "Y",
-  "Z",
-  "-",
-  "1",
-  "a",
-  "b",
-  "c",
-  "d",
-  "3",
-  "e",
-  "f",
-  "g",
-  "h",
-  "5",
-  "i",
-  "j",
-  "k",
-  "l",
-  "m",
-  "n",
-  "7",
-  "o",
-  "p",
-  "q",
-  "r",
-  "s",
-  "t",
-  "9",
-  "u",
-  "v",
-  "w",
-  "x",
-  "y",
-  "z",
-  ".",
-];
-
-function serializeNumber(delta: number, orig: number) {
-  let code = "";
-  if (delta >= -1024 && delta < 1024) {
-    code += alphabet[(delta + 1024) >> 6];
-    code += alphabet[(delta + 1024) & 63];
-  } else if (delta >= -32768 && delta < 32768) {
-    const value = 131072 | (delta + 32768);
-    code += alphabet[(value >> 12) & 63];
-    code += alphabet[(value >> 6) & 63];
-    code += alphabet[value & 63];
-  } else {
-    const value = 805306368 | (orig & 268435455);
-    code += alphabet[(value >> 24) & 63];
-    code += alphabet[(value >> 18) & 63];
-    code += alphabet[(value >> 12) & 63];
-    code += alphabet[(value >> 6) & 63];
-    code += alphabet[value & 63];
-  }
-  return code;
-}
-
-function coordsToString(coords: { lat: number; lon: number }[]): string {
-  let ox = 0;
-  let oy = 0;
-  let result = "";
-  for (const { lat, lon } of coords) {
-    const x = Math.round(((lon + 180) * (1 << 28)) / 360);
-    const y = Math.round(((lat + 90) * (1 << 28)) / 180);
-    const dx = x - ox;
-    const dy = y - oy;
-    result += serializeNumber(dx, x);
-    result += serializeNumber(dy, y);
-    ox = x;
-    oy = y;
-  }
-  return result;
-}
-
-export function getUrlForPoints(points: { lat: number; lon: number }[]) {
-  return `https://en.mapy.cz/zakladni?vlastni-body&uc=${
-    coordsToString(
-      points,
-    )
-  }`;
-}
-
-export function getImageForPoints(points: { lat: number; lon: number }[]) {
+export function getUrlForPoint({
+  center,
+  point,
+  zoom,
+}: {
+  center: LatLon;
+  point: LatLon;
+  zoom: number;
+}) {
   return (
-    `https://en.mapy.cz/screenshoter?` +
+    "https://mapy.com/en/turisticka?" +
     new URLSearchParams({
-      url: getUrlForPoints(points) + "&p=3&l=0",
+      q: `${point.lat}N, ${point.lon}E`,
+      source: "coor",
+      id: `${point.lon},${point.lat}`,
+      ds: "1",
+      x: center.lon.toString(),
+      y: center.lat.toString(),
+      z: zoom.toString(),
+    }).toString()
+  );
+}
+
+type LatLon = {
+  lat: number;
+  lon: number;
+};
+
+export function getImageForPoint(meta: {
+  center: LatLon;
+  point: LatLon;
+  zoom: number;
+}) {
+  return (
+    `https://mapy.com/screenshoter?` +
+    new URLSearchParams({
+      url: getUrlForPoint(meta) + "&p=3&l=0",
       width: "1200",
       height: "630",
     }).toString()
   );
+}
+
+function Deg2Rad(degrees: number) {
+  return degrees * (Math.PI / 180);
+}
+function Rad2Deg(radians: number) {
+  return radians * (180 / Math.PI);
+}
+
+// disownered from https://gis.stackexchange.com/a/19652/175029
+export function zoomForPoints(mapArea: {
+  MinY: number;
+  MinX: number;
+  MaxY: number;
+  MaxX: number;
+}): { center: LatLon; zoom: number } {
+  const ry1 = Math.log(
+    (Math.sin(Deg2Rad(mapArea.MinY)) + 1) / Math.cos(Deg2Rad(mapArea.MinY)),
+  );
+  const ry2 = Math.log(
+    (Math.sin(Deg2Rad(mapArea.MaxY)) + 1) / Math.cos(Deg2Rad(mapArea.MaxY)),
+  );
+  const ryc = (ry1 + ry2) / 2;
+  const centerY = Rad2Deg(Math.atan(Math.sinh(ryc)));
+
+  // Calculate the horizontal resolution
+  const resolutionHorizontal = (mapArea.MaxX - mapArea.MinX) / 1200;
+
+  // Calculate the vertical resolution
+  const vy0 = Math.log(Math.tan(Math.PI * (0.25 + centerY / 360)));
+  const vy1 = Math.log(Math.tan(Math.PI * (0.25 + mapArea.MaxY / 360)));
+  const viewHeightHalf = 630 / 2.0;
+  const zoomFactorPowered = viewHeightHalf / (40.7436654315252 * (vy1 - vy0));
+  const resolutionVertical = 360.0 / (zoomFactorPowered * 256);
+
+  // Determine the final resolution and zoom level
+  const resolution = Math.max(resolutionHorizontal, resolutionVertical) * 1.8;
+  const zoom = Math.log2(360 / (resolution * 256)); // Math.log2 is equivalent to Log with base 2
+  const lon = (mapArea.MinX + mapArea.MaxX) / 2.0;
+  const lat = centerY;
+
+  return {
+    center: { lat, lon },
+    zoom: Math.round(zoom),
+  };
 }
