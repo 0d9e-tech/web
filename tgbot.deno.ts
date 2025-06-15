@@ -580,6 +580,12 @@ Be grateful for your abilities and your incredible success and your considerable
           text: data.message.text + "\n\n" + disclaimer,
           entities: data.message.entities,
         });
+      } else {
+        await tgCall({
+          chat_id: data.message.from.id,
+          text:
+            `Hej chápu že to je opruz, tady máš tu původní zprávu:\n\n${text}`,
+        });
       }
     }
   }
