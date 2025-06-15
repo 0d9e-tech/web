@@ -3,7 +3,11 @@
 
 import unidecode from "npm:unidecode";
 import { geohash } from "./geohash.deno.ts";
-import { getImageForPoints, getUrlForPoints } from "./mapycz.deno.ts";
+import {
+  getImageForPoint,
+  getUrlForPoint,
+  zoomForPoints,
+} from "./mapycz.deno.ts";
 
 const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
@@ -67,9 +71,7 @@ async function domeny() {
     const chunk = list.splice(0, 50);
     const webArchiveLinks = chunk
       .map((x) => x.replaceAll(/[_*[\\\]()~`>#+=|{}.!/-]/g, ($) => `\\${$}`))
-      .map(
-        (l) => `[${l}](https://web.archive.org/web/${l})`,
-      );
+      .map((l) => `[${l}](https://web.archive.org/web/${l})`);
     processTgUpdate(
       await tgCall({
         text: webArchiveLinks.join("\n"),
@@ -79,15 +81,23 @@ async function domeny() {
   }
 
   if (Math.random() < 0.5) {
-    const { result: { stickers: sticekrs } } = await tgCall({
-      name: STICEKR_SET_NAME,
-    }, "getStickerSet");
+    const {
+      result: { stickers: sticekrs },
+    } = await tgCall(
+      {
+        name: STICEKR_SET_NAME,
+      },
+      "getStickerSet",
+    );
     const { file_id: sticekr } =
       sticekrs[Math.floor(Math.random() * sticekrs.length)];
-    await tgCall({
-      chat_id: MAIN_CHAT_ID,
-      sticker: sticekr,
-    }, "sendSticker");
+    await tgCall(
+      {
+        chat_id: MAIN_CHAT_ID,
+        sticker: sticekr,
+      },
+      "sendSticker",
+    );
   }
 }
 
@@ -111,11 +121,21 @@ async function postGeohash() {
   );
 
   const geoHash = await geohash(new Date(), origin);
+  const a = zoomForPoints({
+    MinY: Math.min(origin.lat, geoHash.lat),
+    MinX: Math.min(origin.lon, geoHash.lon),
+    MaxY: Math.max(origin.lat, geoHash.lat),
+    MaxX: Math.max(origin.lon, geoHash.lon),
+  });
+  const meta = {
+    point: geoHash,
+    ...a,
+  };
+
   const text = `[ ](${
-    getImageForPoints([
-      origin,
-      geoHash,
-    ])
+    getImageForPoint(
+      meta,
+    )
   })Today's geohash is at [${
     geoHash.lat
       .toFixed(5)
@@ -125,9 +145,9 @@ async function postGeohash() {
       .toFixed(5)
       .replace(".", "\\.")
   }](${
-    getUrlForPoints([
-      geoHash,
-    ])
+    getUrlForPoint(
+      meta,
+    )
   })\\.\nPlease refer to xkcd\\.com/426/ for further steps\\.`;
 
   await tgCall({
@@ -325,11 +345,14 @@ async function* handleTgUpdate(data: any) {
   }
 
   if (text.toLowerCase().includes("pivo")) {
-    yield await tgCall({
-      chat_id: data.message.chat.id,
-      sticker:
-        "CAACAgQAAxUAAWeBX6jI8a_GFYMipcEDK3cpZW0hAAI7FQACdWMQUHHysL9Zw-JuNgQ",
-    }, "sendSticker");
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        sticker:
+          "CAACAgQAAxUAAWeBX6jI8a_GFYMipcEDK3cpZW0hAAI7FQACdWMQUHHysL9Zw-JuNgQ",
+      },
+      "sendSticker",
+    );
   }
 
   if (text.toLowerCase().includes("hrovno")) {
@@ -498,30 +521,30 @@ Be grateful for your abilities and your incredible success and your considerable
 
   const bannedWords = [
     {
-      "trigger": "Regiojet",
-      "genitiv": "Regiojetu",
-      "popis": "Regiojet je objektivně špatný dopravce",
+      trigger: "Regiojet",
+      genitiv: "Regiojetu",
+      popis: "Regiojet je objektivně špatný dopravce",
     },
     {
-      "trigger": "PHP",
-      "genitiv": "PHP",
-      "popis": "psaní PHP by mělo být krimiálně trestáno",
+      trigger: "PHP",
+      genitiv: "PHP",
+      popis: "psaní PHP by mělo být krimiálně trestáno",
     },
     {
-      "trigger": "Zig",
-      "genitiv": "Zigu",
-      "popis": "Zig je jenom glorified C a mělo by být zakázáno",
+      trigger: "Zig",
+      genitiv: "Zigu",
+      popis: "Zig je jenom glorified C a měl by být zakázán",
     },
     {
-      "trigger": "Rust",
-      "regex": /\br[uů]st/i,
-      "genitiv": "Rustu",
-      "popis": "Rust je jenom glorified C++ a měl by být zakázán",
+      trigger: "Rust",
+      regex: /\br[uů]st/i,
+      genitiv: "Rustu",
+      popis: "Rust je jenom glorified C++ a měl by být zakázán",
     },
     {
-      "trigger": "prdění",
-      "genitiv": "prdění",
-      "popis": "prdění je jenom zbabělé sraní a mělo by být zakázáno",
+      trigger: "prdění",
+      genitiv: "prdění",
+      popis: "prdění je jenom zbabělé sraní a mělo by být zakázáno",
     },
   ];
 
@@ -803,7 +826,7 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
   const resp2 = await fetch(
     `https://api.telegram.org/file/bot${token}/${data.result.file_path}`,
   );
-  if (!resp2.ok) return "telegram cdn is a hoe: " + await resp2.text();
+  if (!resp2.ok) return "telegram cdn is a hoe: " + (await resp2.text());
 
   const fileName = await Deno.makeTempFile();
   await Deno.writeFile(fileName, resp2.body!);
@@ -831,7 +854,7 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
       body,
     },
   );
-  if (!resp3.ok) return "skill issue: " + await resp3.text();
+  if (!resp3.ok) return "skill issue: " + (await resp3.text());
 
   const data4 = await tgCall(
     {
@@ -855,8 +878,9 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
   yield resp5;
 
   if (!resp5.ok) {
-    return "actually it succeeded but i failed to send it: " +
-      JSON.stringify(resp5);
+    return (
+      "actually it succeeded but i failed to send it: " + JSON.stringify(resp5)
+    );
   }
 
   return null;
