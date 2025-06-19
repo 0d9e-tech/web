@@ -581,7 +581,7 @@ Be grateful for your abilities and your incredible success and your considerable
           entities: data.message.entities,
         });
       } else {
-        await tgCall({
+        yield await tgCall({
           chat_id: data.message.from.id,
           text:
             `Hej chápu že to je opruz, tady máš tu původní zprávu:\n\n${text}`,
@@ -750,7 +750,7 @@ async function* reportProcessResult(
   });
 }
 
-async function handleCallbackQuery(data: any) {
+async function* handleCallbackQuery(data: any) {
   const cbData = data.callback_query.data;
   if (cbData.startsWith("kill:")) {
     const proc = runningProcesses.get(cbData.slice(5));
