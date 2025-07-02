@@ -105,7 +105,10 @@ let tempDir = "";
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.Process>();
 
-const origin = { lat: 50.1005803, lon: 14.3954325 };
+const origins = [
+  { lat: 50.1005803, lon: 14.3954325 },
+  { lat: 55.6865969, lon: 12.5759392 },
+];
 async function postGeohash() {
   const upcoming = new Date();
   upcoming.setHours(6);
@@ -116,45 +119,47 @@ async function postGeohash() {
     upcoming.setDate(upcoming.getDate() + 1);
   }
 
+
+  for (const origin of origins) {
+    const geoHash = await geohash(new Date(), origin);
+    const a = zoomForPoints({
+      MinY: Math.min(origin.lat, geoHash.lat),
+      MinX: Math.min(origin.lon, geoHash.lon),
+      MaxY: Math.max(origin.lat, geoHash.lat),
+      MaxX: Math.max(origin.lon, geoHash.lon),
+    });
+    const meta = {
+      point: geoHash,
+      ...a,
+    };
+
+    const text = `[ ](${
+      getImageForPoint(
+        meta,
+      )
+    })Today's geohash is at [${
+      geoHash.lat
+        .toFixed(5)
+        .replace(".", "\\.")
+    } ${
+      geoHash.lon
+        .toFixed(5)
+        .replace(".", "\\.")
+    }](${
+      getUrlForPoint(
+        meta,
+      )
+    })\\.\nPlease refer to xkcd\\.com/426/ for further steps\\.`;
+
+    await tgCall({
+      text,
+      parse_mode: "MarkdownV2",
+    });
+  }
+
   await new Promise((resolve) =>
     setTimeout(resolve, upcoming.getTime() - now.getTime())
   );
-
-  const geoHash = await geohash(new Date(), origin);
-  const a = zoomForPoints({
-    MinY: Math.min(origin.lat, geoHash.lat),
-    MinX: Math.min(origin.lon, geoHash.lon),
-    MaxY: Math.max(origin.lat, geoHash.lat),
-    MaxX: Math.max(origin.lon, geoHash.lon),
-  });
-  const meta = {
-    point: geoHash,
-    ...a,
-  };
-
-  const text = `[ ](${
-    getImageForPoint(
-      meta,
-    )
-  })Today's geohash is at [${
-    geoHash.lat
-      .toFixed(5)
-      .replace(".", "\\.")
-  } ${
-    geoHash.lon
-      .toFixed(5)
-      .replace(".", "\\.")
-  }](${
-    getUrlForPoint(
-      meta,
-    )
-  })\\.\nPlease refer to xkcd\\.com/426/ for further steps\\.`;
-
-  await tgCall({
-    text,
-    parse_mode: "MarkdownV2",
-  });
-
   await domeny();
 
   setTimeout(postGeohash, 1000 * 60 * 60 * 2);
