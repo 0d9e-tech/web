@@ -119,6 +119,9 @@ async function postGeohash() {
     upcoming.setDate(upcoming.getDate() + 1);
   }
 
+  await new Promise((resolve) =>
+    setTimeout(resolve, upcoming.getTime() - now.getTime())
+  );
 
   for (const origin of origins) {
     const geoHash = await geohash(new Date(), origin);
@@ -157,9 +160,6 @@ async function postGeohash() {
     });
   }
 
-  await new Promise((resolve) =>
-    setTimeout(resolve, upcoming.getTime() - now.getTime())
-  );
   await domeny();
 
   setTimeout(postGeohash, 1000 * 60 * 60 * 2);
@@ -592,6 +592,7 @@ Be grateful for your abilities and your incredible success and your considerable
             `Hej chápu že to je opruz, tady máš tu původní zprávu:\n\n${text}`,
         });
       }
+      break;
     }
   }
 }
