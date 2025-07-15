@@ -28,11 +28,34 @@ function genRandomToken(bytes: number) {
 
 const webhookUrlToken = genRandomToken(96);
 
+// Rate limiter to prevent overwhelming the API
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 100; // Minimum 100ms between requests
+
+async function rateLimitedDelay() {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+    const delay = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  
+  lastRequestTime = Date.now();
+}
+
 async function tgCall(
   options: any,
   endpoint: string = "sendMessage",
+  retryCount: number = 0,
 ): Promise<Response> {
   if (endpoint == "sendMessage") options.chat_id ??= MAIN_CHAT_ID;
+
+  const maxRetries = 5;
+  const baseDelay = 1000; // 1 second
+
+  // Apply rate limiting before making the request
+  await rateLimitedDelay();
 
   let req = await fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
     method: "POST",
@@ -41,13 +64,35 @@ async function tgCall(
     },
     body: JSON.stringify(options),
   });
+  
   try {
     let resp = await req.json();
+    
+    // Handle rate limiting with exponential backoff
+    if (!resp.ok && resp.error_code === 429 && retryCount < maxRetries) {
+      const retryAfter = resp.parameters?.retry_after || Math.pow(2, retryCount);
+      const delay = Math.min(baseDelay * Math.pow(2, retryCount), retryAfter * 1000);
+      
+      console.log(`Rate limited on ${endpoint}. Retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return tgCall(options, endpoint, retryCount + 1);
+    }
+    
     if (!resp.ok) {
       console.log("Req to", endpoint, "with", options, "failed:", resp);
     }
     return resp;
-  } catch (e) {}
+  } catch (e) {
+    // Handle network errors with exponential backoff
+    if (retryCount < maxRetries) {
+      const delay = baseDelay * Math.pow(2, retryCount);
+      console.log(`Network error on ${endpoint}. Retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return tgCall(options, endpoint, retryCount + 1);
+    }
+  }
   return req;
 }
 
@@ -555,7 +600,7 @@ Be grateful for your abilities and your incredible success and your considerable
 
   for (const { trigger, genitiv, popis, regex } of bannedWords) {
     const disclaimer =
-      `Upozornění: Tato zpáva obsahuje ${trigger}. Jsem si vědom tohoto prohřešku, ${popis} a tato zpáva nesmí být interpretována jako podpora ${genitiv}.`;
+      `Upozornění: Tato zpráva obsahuje ${trigger}. Jsem si vědom tohoto prohřešku, ${popis} a tato zpáva nesmí být interpretována jako podpora ${genitiv}.`;
     if (text.includes(disclaimer)) continue;
 
     if (
