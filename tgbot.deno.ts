@@ -385,6 +385,17 @@ async function* handleTgUpdate(data: any) {
     });
   }
 
+  if (
+    data.message.chat.id === MAIN_CHAT_ID &&
+    !(data.message.message_id % 1000000)
+  ) {
+    yield await tgCall({
+      chat_id: data.message.chat.id,
+      reply_to_message_id: data.message.message_id,
+      text: "wow, great message. honestly. one in a million.",
+    });
+  }
+
   if (text.toLowerCase().includes("balls")) {
     yield await tgCall(
       {
