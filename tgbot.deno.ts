@@ -35,12 +35,12 @@ const MIN_REQUEST_INTERVAL = 100; // Minimum 100ms between requests
 async function rateLimitedDelay() {
   const now = Date.now();
   const timeSinceLastRequest = now - lastRequestTime;
-  
+
   if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
     const delay = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
-  
+
   lastRequestTime = Date.now();
 }
 
@@ -64,21 +64,29 @@ async function tgCall(
     },
     body: JSON.stringify(options),
   });
-  
+
   try {
     let resp = await req.json();
-    
+
     // Handle rate limiting with exponential backoff
     if (!resp.ok && resp.error_code === 429 && retryCount < maxRetries) {
-      const retryAfter = resp.parameters?.retry_after || Math.pow(2, retryCount);
-      const delay = Math.min(baseDelay * Math.pow(2, retryCount), retryAfter * 1000);
-      
-      console.log(`Rate limited on ${endpoint}. Retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
-      
-      await new Promise(resolve => setTimeout(resolve, delay));
+      const retryAfter = resp.parameters?.retry_after ||
+        Math.pow(2, retryCount);
+      const delay = Math.min(
+        baseDelay * Math.pow(2, retryCount),
+        retryAfter * 1000,
+      );
+
+      console.log(
+        `Rate limited on ${endpoint}. Retrying in ${delay}ms (attempt ${
+          retryCount + 1
+        }/${maxRetries})`,
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
       return tgCall(options, endpoint, retryCount + 1);
     }
-    
+
     if (!resp.ok) {
       console.log("Req to", endpoint, "with", options, "failed:", resp);
     }
@@ -87,9 +95,13 @@ async function tgCall(
     // Handle network errors with exponential backoff
     if (retryCount < maxRetries) {
       const delay = baseDelay * Math.pow(2, retryCount);
-      console.log(`Network error on ${endpoint}. Retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
-      
-      await new Promise(resolve => setTimeout(resolve, delay));
+      console.log(
+        `Network error on ${endpoint}. Retrying in ${delay}ms (attempt ${
+          retryCount + 1
+        }/${maxRetries})`,
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
       return tgCall(options, endpoint, retryCount + 1);
     }
   }
@@ -110,7 +122,8 @@ async function domeny() {
     .map((x) => x.item_title);
   list.sort();
   list.sort((a, b) => a.length - b.length);
-  list = list.filter((x) => x.length <= 8).concat(list.slice(-20));
+  list = list.filter((x) => x.length <= 8 && !(/^[0-9]{4,8}\.cz$/.test(x)))
+    .concat(list.slice(-20));
   console.log(list);
   while (list.length > 0) {
     const chunk = list.splice(0, 50);
