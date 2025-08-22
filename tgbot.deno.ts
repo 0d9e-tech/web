@@ -50,17 +50,17 @@ function matchesWithTypos(text: string, patterns: string[]): boolean {
     const normalizedPattern = pattern.toLowerCase().replace(/[^\w]/g, '');
     // Exact match
     if (normalizedText.includes(normalizedPattern)) return true;
-    // Simple typo variations (missing/extra characters)
-    if (normalizedPattern.length >= 3) {
+    // Simple typo variations (only for patterns of length 4 or more to avoid false positives)
+    if (normalizedPattern.length >= 4) {
       // Check for missing one character
       for (let i = 0; i < normalizedPattern.length; i++) {
         const variant = normalizedPattern.slice(0, i) + normalizedPattern.slice(i + 1);
-        if (normalizedText.includes(variant)) return true;
+        if (variant.length >= 3 && normalizedText.includes(variant)) return true;
       }
-      // Check for extra character
-      for (let i = 0; i <= normalizedPattern.length; i++) {
+      // Check for one character substitution
+      for (let i = 0; i < normalizedPattern.length; i++) {
         for (const c of 'abcdefghijklmnopqrstuvwxyz') {
-          const variant = normalizedPattern.slice(0, i) + c + normalizedPattern.slice(i);
+          const variant = normalizedPattern.slice(0, i) + c + normalizedPattern.slice(i + 1);
           if (normalizedText.includes(variant)) return true;
         }
       }
@@ -72,7 +72,7 @@ function matchesWithTypos(text: string, patterns: string[]): boolean {
 // Check if text contains sticker trigger words with typo tolerance
 function isStickerTrigger(text: string): boolean {
   const stickerVariants = ['sticker', 'sticekr', 'stickr', 'stiker'];
-  const thisVariants = ['this', 'thi', 'ths'];
+  const thisVariants = ['this', 'ths', 'thi'];
   
   return matchesWithTypos(text, stickerVariants) && matchesWithTypos(text, thisVariants);
 }
