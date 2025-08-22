@@ -43,16 +43,54 @@ function getAvailableStickerSets(): string[] {
   return sets;
 }
 
+// Typo-proof text matching function
+function matchesWithTypos(text: string, patterns: string[]): boolean {
+  const normalizedText = text.toLowerCase().replace(/[^\w]/g, '');
+  return patterns.some(pattern => {
+    const normalizedPattern = pattern.toLowerCase().replace(/[^\w]/g, '');
+    // Exact match
+    if (normalizedText.includes(normalizedPattern)) return true;
+    // Simple typo variations (missing/extra characters)
+    if (normalizedPattern.length >= 3) {
+      // Check for missing one character
+      for (let i = 0; i < normalizedPattern.length; i++) {
+        const variant = normalizedPattern.slice(0, i) + normalizedPattern.slice(i + 1);
+        if (normalizedText.includes(variant)) return true;
+      }
+      // Check for extra character
+      for (let i = 0; i <= normalizedPattern.length; i++) {
+        for (const c of 'abcdefghijklmnopqrstuvwxyz') {
+          const variant = normalizedPattern.slice(0, i) + c + normalizedPattern.slice(i);
+          if (normalizedText.includes(variant)) return true;
+        }
+      }
+    }
+    return false;
+  });
+}
+
+// Check if text contains sticker trigger words with typo tolerance
+function isStickerTrigger(text: string): boolean {
+  const stickerVariants = ['sticker', 'sticekr', 'stickr', 'stiker'];
+  const thisVariants = ['this', 'thi', 'ths'];
+  
+  return matchesWithTypos(text, stickerVariants) && matchesWithTypos(text, thisVariants);
+}
+
 // Determine which sticker set to use based on context
 function getStickerSetForContext(message: any): string {
-  // If it's from the known Marian user ID and we have a Marian sticker set
-  if (message?.from?.id === 656461353 && MARIAN_STICKER_SET) {
+  const text = message?.text?.toLowerCase() || message?.caption?.toLowerCase() || "";
+  
+  // Check for Marian related content with typo tolerance
+  const marianVariants = ['marian', 'marain', 'marin', 'marián'];
+  if (matchesWithTypos(text, marianVariants) && MARIAN_STICKER_SET) {
     return MARIAN_STICKER_SET;
   }
   
-  // Check for Tom Sláma related content (you can add more sophisticated detection here)
-  const text = message?.text?.toLowerCase() || message?.caption?.toLowerCase() || "";
-  if ((text.includes("tom") || text.includes("sláma")) && TOM_SLAMA_STICKER_SET) {
+  // Check for Tom Sláma related content with typo tolerance
+  const tomVariants = ['tom', 'tomm', 'tomas', 'tomáš'];
+  const slamaVariants = ['sláma', 'slama', 'slamma', 'slamm'];
+  if ((matchesWithTypos(text, tomVariants) || matchesWithTypos(text, slamaVariants)) && TOM_SLAMA_STICKER_SET) {
     return TOM_SLAMA_STICKER_SET;
   }
   
@@ -167,25 +205,34 @@ async function domeny() {
   }
 
   if (Math.random() < 0.5) {
-    // Get a random sticker set from available sets
+    // Get all stickers from all available sets for uniform selection
     const availableSets = getAvailableStickerSets();
     if (availableSets.length === 0) return;
     
-    const randomSet = availableSets[Math.floor(Math.random() * availableSets.length)];
-    const {
-      result: { stickers: sticekrs },
-    } = await tgCall(
-      {
-        name: randomSet,
-      },
-      "getStickerSet",
-    );
-    const { file_id: sticekr } =
-      sticekrs[Math.floor(Math.random() * sticekrs.length)];
+    const allStickers = [];
+    for (const setName of availableSets) {
+      try {
+        const {
+          result: { stickers: sticekrs },
+        } = await tgCall(
+          {
+            name: setName,
+          },
+          "getStickerSet",
+        );
+        allStickers.push(...sticekrs);
+      } catch (error) {
+        console.log(`Failed to get stickers from set ${setName}:`, error);
+      }
+    }
+    
+    if (allStickers.length === 0) return;
+    
+    const randomSticker = allStickers[Math.floor(Math.random() * allStickers.length)];
     await tgCall(
       {
         chat_id: MAIN_CHAT_ID,
-        sticker: sticekr,
+        sticker: randomSticker.file_id,
       },
       "sendSticker",
     );
@@ -550,7 +597,7 @@ Be grateful for your abilities and your incredible success and your considerable
   }
 
   if (
-    text.toLowerCase() === "sticker this" &&
+    isStickerTrigger(text) &&
     data.message.chat.id === MAIN_CHAT_ID
   ) {
     const result = yield* sticekrThis(data.message.reply_to_message);
