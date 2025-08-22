@@ -13,6 +13,8 @@ const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN");
 const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME");
+const TOM_SLAMA_STICKER_SET = Deno.env.get("TOM_SLAMA_STICKER_SET");
+const MARIAN_STICKER_SET = Deno.env.get("MARIAN_STICKER_SET");
 const STICEKR_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
 
 export const webhookPath = "/tg-webhook";
@@ -31,6 +33,32 @@ const webhookUrlToken = genRandomToken(96);
 // Rate limiter to prevent overwhelming the API
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 100; // Minimum 100ms between requests
+
+// Get all available sticker sets
+function getAvailableStickerSets(): string[] {
+  const sets = [];
+  if (STICEKR_SET_NAME) sets.push(STICEKR_SET_NAME);
+  if (TOM_SLAMA_STICKER_SET) sets.push(TOM_SLAMA_STICKER_SET);
+  if (MARIAN_STICKER_SET) sets.push(MARIAN_STICKER_SET);
+  return sets;
+}
+
+// Determine which sticker set to use based on context
+function getStickerSetForContext(message: any): string {
+  // If it's from the known Marian user ID and we have a Marian sticker set
+  if (message?.from?.id === 656461353 && MARIAN_STICKER_SET) {
+    return MARIAN_STICKER_SET;
+  }
+  
+  // Check for Tom Sláma related content (you can add more sophisticated detection here)
+  const text = message?.text?.toLowerCase() || message?.caption?.toLowerCase() || "";
+  if ((text.includes("tom") || text.includes("sláma")) && TOM_SLAMA_STICKER_SET) {
+    return TOM_SLAMA_STICKER_SET;
+  }
+  
+  // Default to the main sticker set
+  return STICEKR_SET_NAME || "";
+}
 
 async function rateLimitedDelay() {
   const now = Date.now();
@@ -139,11 +167,16 @@ async function domeny() {
   }
 
   if (Math.random() < 0.5) {
+    // Get a random sticker set from available sets
+    const availableSets = getAvailableStickerSets();
+    if (availableSets.length === 0) return;
+    
+    const randomSet = availableSets[Math.floor(Math.random() * availableSets.length)];
     const {
       result: { stickers: sticekrs },
     } = await tgCall(
       {
-        name: STICEKR_SET_NAME,
+        name: randomSet,
       },
       "getStickerSet",
     );
@@ -256,6 +289,14 @@ export async function init() {
     throw new Error(
       "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICEKR_SET_NAME or STICEKR_SET_OWNER is not set",
     );
+  }
+
+  // Log optional sticker sets if they are configured
+  if (TOM_SLAMA_STICKER_SET) {
+    console.log(`Tom Sláma sticker set: ${TOM_SLAMA_STICKER_SET}`);
+  }
+  if (MARIAN_STICKER_SET) {
+    console.log(`Marian sticker set: ${MARIAN_STICKER_SET}`);
   }
 
   tempDir = await Deno.makeTempDir();
@@ -886,7 +927,7 @@ async function* handleInlineQuery(data: any) {
   }
 }
 
-async function* sticekrThis(orig_msg: any): Promise<string | null> {
+async function* sticekrThis(orig_msg: any): AsyncGenerator<any, string | null> {
   if (!orig_msg) return "wtf";
   let file;
   if (Array.isArray(orig_msg.photo)) {
@@ -920,9 +961,13 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
   if (res.code !== 0) return "imagemagick is a hoe";
   const sticekr = await Deno.readFile(outFileName);
 
+  // Determine which sticker set to use based on the original message context
+  const targetStickerSet = getStickerSetForContext(orig_msg);
+  if (!targetStickerSet) return "no sticker set configured";
+
   const body = new FormData();
   body.append("user_id", STICEKR_SET_OWNER.toString());
-  body.append("name", STICEKR_SET_NAME);
+  body.append("name", targetStickerSet);
   body.append(
     "sticker",
     JSON.stringify({ sticker: "attach://file", emoji_list: ["🤓"] }),
@@ -939,12 +984,12 @@ async function* sticekrThis(orig_msg: any): Promise<string | null> {
 
   const data4 = await tgCall(
     {
-      name: STICEKR_SET_NAME,
+      name: targetStickerSet,
     },
     "getStickerSet",
   );
   if (!data4.ok) {
-    return "i ran out of error message ideas: " + JSON.stringify(resp4);
+    return "i ran out of error message ideas: " + JSON.stringify(data4);
   }
   const sticekrId = data4.result.stickers.at(-1).file_id;
   if (!sticekrId) return "i ran out of error message ideas the most";
