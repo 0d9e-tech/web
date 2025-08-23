@@ -11,8 +11,8 @@ import {
 
 const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
-const DOMAIN = Deno.env.get("DOMAIN")!;
-const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME")!;
+const DOMAIN = Deno.env.get("DOMAIN");
+const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME");
 const STICEKR_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
 
 export const webhookPath = "/tg-webhook";
@@ -46,9 +46,9 @@ async function rateLimitedDelay() {
 
 async function tgCall(
   options: any,
-  endpoint = "sendMessage",
-  retryCount = 0,
-): Promise<any> {
+  endpoint: string = "sendMessage",
+  retryCount: number = 0,
+): Promise<Response> {
   if (endpoint == "sendMessage") options.chat_id ??= MAIN_CHAT_ID;
 
   const maxRetries = 5;
@@ -112,17 +112,17 @@ async function domeny() {
   const resp = await fetch(
     "https://auctions-master.nic.cz/share/new_auctions.json",
   );
+  let list = await resp.json();
 
-  let list = ((await resp.json()) as any[])
+  list = list
     .filter(
       (a) =>
         a.auction_from.split("T")[0] === new Date().toISOString().split("T")[0],
     )
-    .map((x) => x.item_title as string);
+    .map((x) => x.item_title);
   list.sort();
   list.sort((a, b) => a.length - b.length);
-  list = list
-    .filter((x) => x.length <= 8 && !/^[0-9]{4,8}\.cz$/.test(x))
+  list = list.filter((x) => x.length <= 8 && !(/^[0-9]{4,8}\.cz$/.test(x)))
     .concat(list.slice(-20));
   console.log(list);
   while (list.length > 0) {
@@ -138,29 +138,30 @@ async function domeny() {
     );
   }
 
-  const {
-    result: { stickers: sticekrs },
-  }: any = await tgCall(
-    {
-      name: STICEKR_SET_NAME,
-    },
-    "getStickerSet",
-  );
-  const { file_id: sticekr } =
-    sticekrs[Math.floor(Math.random() * sticekrs.length)];
-  await tgCall(
-    {
-      chat_id: MAIN_CHAT_ID,
-      sticker: sticekr,
-      reply_to_message_id: 97776,
-    },
-    "sendSticker",
-  );
+  if (Math.random() < 0.5) {
+    const {
+      result: { stickers: sticekrs },
+    } = await tgCall(
+      {
+        name: STICEKR_SET_NAME,
+      },
+      "getStickerSet",
+    );
+    const { file_id: sticekr } =
+      sticekrs[Math.floor(Math.random() * sticekrs.length)];
+    await tgCall(
+      {
+        chat_id: MAIN_CHAT_ID,
+        sticker: sticekr,
+      },
+      "sendSticker",
+    );
+  }
 }
 
 let tempDir = "";
 const contentTypes = new Map<string, string>();
-const runningProcesses = new Map<string, Deno.ChildProcess>();
+const runningProcesses = new Map<string, Deno.Process>();
 
 const origins = [
   { lat: 50.1005803, lon: 14.3954325 },
@@ -278,12 +279,6 @@ export async function init() {
     text: "prokop hazejici vlastovku",
   });
 
-  Deno.cron("tuuuuuuuuuu", "0 12 * * 3#1", () => {
-    tgCall({
-      text: "TÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚ",
-    });
-  });
-
   postGeohash();
 }
 
@@ -335,7 +330,7 @@ async function processTgUpdate(data: any) {
 async function* handleTgUpdate(data: any) {
   const { ok } = data;
   data.message ??= data.result;
-  if ("callback_query" in data) return handleCallbackQuery(data);
+  if ("callback_query" in data) return yield* handleCallbackQuery(data);
   if ("inline_query" in data) return yield* handleInlineQuery(data);
   if ("edited_message" in data) {
     data.message = data.edited_message;
@@ -392,12 +387,12 @@ async function* handleTgUpdate(data: any) {
 
   if (
     data.message.chat.id === MAIN_CHAT_ID &&
-    !(data.message.message_id % 100000)
+    !(data.message.message_id % 1000000)
   ) {
     yield await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
-      text: "wow, great message. honestly.",
+      text: "wow, great message. honestly. one in a million.",
     });
   }
 
@@ -423,32 +418,22 @@ async function* handleTgUpdate(data: any) {
     );
   }
 
+  if (text.toLowerCase().includes("pivo")) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        sticker:
+          "CAACAgQAAxUAAWeBX6jI8a_GFYMipcEDK3cpZW0hAAI7FQACdWMQUHHysL9Zw-JuNgQ",
+      },
+      "sendSticker",
+    );
+  }
+
   if (text.toLowerCase().includes("hrovno")) {
     await tgCall({
       chat_id: data.message.chat.id,
       text:
         `Pánové, toto je certifikované hrovno. Miluji hrovno. Co je hrovnové, to je suprové. Hrovnový moment.`,
-    });
-  }
-
-  if (text.toLowerCase().includes("zig")) {
-    await tgCall({
-      chat_id: data.message.chat.id,
-      text:
-        `Pánové, toto je certifikované Zig. Miluji Zig. Co je Zigové, to je suprové. Zigový moment.`,
-    });
-  }
-
-  if (
-    text.toLowerCase().includes("software") &&
-    !(
-      text.toLowerCase().includes("víc špatný") ||
-      text.toLowerCase().includes("vic spatny")
-    )
-  ) {
-    await tgCall({
-      chat_id: data.message.chat.id,
-      text: "SENTIMENT ANALYSIS: víc software => víc špatný.",
     });
   }
 
@@ -620,6 +605,11 @@ Be grateful for your abilities and your incredible success and your considerable
       popis: "psaní PHP by mělo být krimiálně trestáno",
     },
     {
+      trigger: "Zig",
+      genitiv: "Zigu",
+      popis: "Zig je jenom glorified C a měl by být zakázán",
+    },
+    {
       trigger: "Rust",
       regex: /\br[uů]st/i,
       genitiv: "Rustu",
@@ -635,9 +625,7 @@ Be grateful for your abilities and your incredible success and your considerable
   for (const { trigger, genitiv, popis, regex } of bannedWords) {
     const disclaimer =
       `Upozornění: Tato zpráva obsahuje ${trigger}. Jsem si vědom tohoto prohřešku, ${popis} a tato zpáva nesmí být interpretována jako podpora ${genitiv}.`;
-    if (text.includes(disclaimer)) {
-      continue;
-    }
+    if (text.includes(disclaimer)) continue;
 
     if (
       regex
@@ -674,62 +662,6 @@ Be grateful for your abilities and your incredible success and your considerable
         });
       }
       break;
-    }
-  }
-
-  {
-    const open = [];
-    let jail = [];
-    const blobs = text.match(/\(+:|:\)+|:\(+|\)+:|[[\]{}()]/g);
-    let i = -1;
-    if (blobs) {
-      for (const blob of blobs) {
-        const isSmajlík = blob.includes(":");
-        for (const char of blob.replace(/[()]:|:[()]/, "")) {
-          i++;
-          if ("([{".includes(char)) {
-            open.push({ char, poppable: isSmajlík, pos: i });
-          } else {
-            const votvírák = { ")": "(", "]": "[", "}": "{" }[char];
-            if (isSmajlík) {
-              for (
-                let i = open.length - 1;
-                i >= 0 && open[i].char == votvírák;
-                i--
-              ) {
-                if (!open[i].poppable) {
-                  open[i].poppable = true;
-                  break;
-                }
-              }
-            } else {
-              while (
-                open.length && open[open.length - 1].char != votvírák &&
-                open[open.length - 1].poppable
-              ) {
-                open.pop();
-              }
-              if (open.length && open[open.length - 1].char == votvírák) {
-                open.pop();
-              } else {
-                jail.push({ char: votvírák, pos: i, jail: true });
-              }
-            }
-          }
-        }
-      }
-    }
-    while (open.length && open[open.length - 1].poppable) {
-      open.pop();
-    }
-
-    for (const cha of (open.concat(jail).sort((a, b) => b.pos - a.pos))) {
-      await tgCall({
-        chat_id: data.message.chat.id,
-        text: cha.jail
-          ? `${cha.char}jail time for ${data.message.from.first_name}`
-          : { "(": ")", "[": "]", "{": "}" }[cha.char],
-      });
     }
   }
 }
@@ -788,35 +720,19 @@ async function* handleSh(data: any, cmd: string) {
     write: true,
     createNew: true,
   });
-  const command = new Deno.Command("bash", {
-    args: [`${tempDir}/${id}.sh`],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
+  const proc = Deno.run({
+    cmd: ["bash", `${tempDir}/${id}.sh`],
+    stdout: outFile.rid,
+    stderr: outFile.rid,
   });
-  const child = command.spawn();
-
-  let length = 0;
-  const writer = outFile.writable.getWriter();
-  const createWritable = () =>
-    new WritableStream({
-      write(chunk: Uint8Array) {
-        length += chunk.length;
-        writer.write(chunk);
-      },
-    });
-  child.stdout.pipeTo(createWritable());
-  child.stderr.pipeTo(createWritable());
-  child.stdin.close();
-
   const raceResult = await Promise.race([
-    child.status,
+    proc.status(),
     new Promise<void>((resolve) => setTimeout(() => resolve(), 5000)),
   ]);
 
   if (raceResult !== undefined) {
     yield* reportProcessResult(
-      length,
+      outFile,
       id,
       data.message.message_id,
       raceResult.code,
@@ -824,7 +740,7 @@ async function* handleSh(data: any, cmd: string) {
     return;
   }
 
-  runningProcesses.set(id, child);
+  runningProcesses.set(id, proc);
   contentTypes.set(id, "application/octet-stream");
 
   const progressMessageResponse = await tgCall({
@@ -845,21 +761,20 @@ async function* handleSh(data: any, cmd: string) {
   });
   yield progressMessageResponse;
 
-  const status = await child.status;
+  const status = await proc.status();
   runningProcesses.delete(id);
 
   yield await tgCall(
     {
       message_id: progressMessageResponse.result.message_id,
-      chat_id: data.message.chat.id,
       reply_markup: {
         inline_keyboard: [],
       },
     },
     "editMessageReplyMarkup",
   );
-  yield* reportProcessResult(
-    length,
+  await reportProcessResult(
+    outFile,
     id,
     progressMessageResponse.result.message_id,
     status.code,
@@ -867,12 +782,14 @@ async function* handleSh(data: any, cmd: string) {
 }
 
 async function* reportProcessResult(
-  length: number,
+  outFile: Deno.FsFile,
   id: string,
   reply_to_message_id: number,
   exitCode: number,
 ) {
   const outPath = `${tempDir}/${id}.out`;
+  const stat = await outFile.stat();
+  outFile.close();
   const fileProc = Deno.run({
     cmd: ["file", "-ib", outPath],
     stdout: "piped",
@@ -884,8 +801,8 @@ async function* reportProcessResult(
   const isText = mime.startsWith("text/") ||
     mime.startsWith("application/json");
   let text;
-  if (length === 0) text = `No output \\(exit code ${exitCode}\\)\\.`;
-  else if (isText && length <= 5000) {
+  if (stat.size === 0) text = `No output \\(exit code ${exitCode}\\)\\.`;
+  else if (isText && stat.size <= 5000) {
     let res = decoder
       .decode(await Deno.readFile(outPath))
       .replaceAll("\\", "\\\\")
@@ -898,7 +815,7 @@ async function* reportProcessResult(
   } else {
     text = "[" +
       (isText ? "Output too long" : "Binary output") +
-      `](https://${DOMAIN}/tgweb/${id}) \\(exit code ${exitCode}, ${length} bytes\\)\\. Set Content\\-Type with \`/settype ${id} mime/type\``;
+      `](https://${DOMAIN}/tgweb/${id}) \\(exit code ${exitCode}, ${stat.size} bytes\\)\\. Set Content\\-Type with \`/settype ${id} mime/type\``;
   }
 
   yield await tgCall({
@@ -908,7 +825,7 @@ async function* reportProcessResult(
   });
 }
 
-async function handleCallbackQuery(data: any) {
+async function* handleCallbackQuery(data: any) {
   const cbData = data.callback_query.data;
   if (cbData.startsWith("kill:")) {
     const proc = runningProcesses.get(cbData.slice(5));
@@ -969,9 +886,7 @@ async function* handleInlineQuery(data: any) {
   }
 }
 
-async function* sticekrThis(
-  orig_msg: any,
-): AsyncGenerator<any, string | null, unknown> {
+async function* sticekrThis(orig_msg: any): Promise<string | null> {
   if (!orig_msg) return "wtf";
   let file;
   if (Array.isArray(orig_msg.photo)) {
@@ -1029,7 +944,7 @@ async function* sticekrThis(
     "getStickerSet",
   );
   if (!data4.ok) {
-    return "i ran out of error message ideas: " + JSON.stringify(data4);
+    return "i ran out of error message ideas: " + JSON.stringify(resp4);
   }
   const sticekrId = data4.result.stickers.at(-1).file_id;
   if (!sticekrId) return "i ran out of error message ideas the most";
