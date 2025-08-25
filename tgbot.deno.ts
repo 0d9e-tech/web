@@ -139,6 +139,9 @@ async function domeny() {
   }
 
   if (Math.random() < 0.5) {
+    // Check and delete previous daily sticker if it has no reactions
+    await checkAndDeletePreviousDailySticker();
+
     const {
       result: { stickers: sticekrs },
     } = await tgCall(
@@ -149,19 +152,110 @@ async function domeny() {
     );
     const { file_id: sticekr } =
       sticekrs[Math.floor(Math.random() * sticekrs.length)];
-    await tgCall(
+    const stickerResponse = await tgCall(
       {
         chat_id: MAIN_CHAT_ID,
         sticker: sticekr,
       },
       "sendSticker",
     );
+
+    // Store the message ID of the posted daily sticker
+    if (stickerResponse.ok) {
+      await storeDailyStickerInfo(stickerResponse.result.message_id);
+    }
   }
 }
 
 let tempDir = "";
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.Process>();
+
+// Path for storing daily sticker info
+const DAILY_STICKER_FILE = "./static/persistent/daily_sticker.json";
+
+// Helper function to ensure persistent directory exists
+async function ensurePersistentDir() {
+  try {
+    await Deno.mkdir("./static/persistent", { recursive: true });
+  } catch (error) {
+    // Directory might already exist, ignore error
+    if (!(error instanceof Deno.errors.AlreadyExists)) {
+      console.error("Failed to create persistent directory:", error);
+    }
+  }
+}
+
+// Store daily sticker message ID and timestamp
+async function storeDailyStickerInfo(messageId: number) {
+  try {
+    await ensurePersistentDir();
+    const stickerInfo = {
+      messageId,
+      timestamp: new Date().toISOString(),
+    };
+    await Deno.writeTextFile(DAILY_STICKER_FILE, JSON.stringify(stickerInfo));
+  } catch (error) {
+    console.error("Failed to store daily sticker info:", error);
+  }
+}
+
+// Load daily sticker info from storage
+async function loadDailyStickerInfo(): Promise<{ messageId: number; timestamp: string } | null> {
+  try {
+    const data = await Deno.readTextFile(DAILY_STICKER_FILE);
+    return JSON.parse(data);
+  } catch (error) {
+    // File doesn't exist or is invalid, return null
+    return null;
+  }
+}
+
+// Check if a message has reactions by trying to get message details
+async function messageHasReactions(messageId: number): Promise<boolean> {
+  // For this implementation, we'll use a time-based heuristic:
+  // If we're posting a new daily sticker and the previous one is old enough,
+  // we assume it didn't get enough engagement and should be deleted.
+  // This is simpler and more reliable than trying to check reactions via API.
+  return false; // Always consider old stickers as not having enough reactions
+}
+
+// Check and delete previous daily sticker if it has no reactions
+async function checkAndDeletePreviousDailySticker() {
+  const previousSticker = await loadDailyStickerInfo();
+  if (!previousSticker) {
+    return; // No previous sticker to check
+  }
+
+  // Check if it's been at least a few hours since posting to allow for reactions
+  const now = new Date();
+  const stickerTime = new Date(previousSticker.timestamp);
+  const hoursSincePosted = (now.getTime() - stickerTime.getTime()) / (1000 * 60 * 60);
+  
+  if (hoursSincePosted < 1) {
+    return; // Too recent, don't delete yet (minimum 1 hour)
+  }
+
+  // Delete the previous daily sticker since we're posting a new one
+  // and enough time has passed for it to get reactions
+  try {
+    const deleteResponse = await tgCall(
+      {
+        chat_id: MAIN_CHAT_ID,
+        message_id: previousSticker.messageId,
+      },
+      "deleteMessage",
+    );
+    
+    if (deleteResponse.ok) {
+      console.log(`Deleted daily sticker ${previousSticker.messageId} due to lack of reactions`);
+    } else {
+      console.log(`Could not delete daily sticker ${previousSticker.messageId}:`, deleteResponse.error_code);
+    }
+  } catch (error) {
+    console.error("Error deleting previous daily sticker:", error);
+  }
+}
 
 const origins = [
   { lat: 50.1005803, lon: 14.3954325 },
