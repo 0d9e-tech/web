@@ -437,6 +437,14 @@ async function* handleTgUpdate(data: any) {
     });
   }
 
+  if (text.toLowerCase().includes("zig")) {
+    await tgCall({
+      chat_id: data.message.chat.id,
+      text:
+        `Pánové, toto je certifikované Zig. Miluji Zig. Co je Zigové, to je suprové. Zigový moment.`,
+    });
+  }
+
   if (
     text.toLowerCase().includes("gnu") &&
     text.toLowerCase().includes("linux") &&
@@ -603,11 +611,6 @@ Be grateful for your abilities and your incredible success and your considerable
       trigger: "PHP",
       genitiv: "PHP",
       popis: "psaní PHP by mělo být krimiálně trestáno",
-    },
-    {
-      trigger: "Zig",
-      genitiv: "Zigu",
-      popis: "Zig je jenom glorified C a měl by být zakázán",
     },
     {
       trigger: "Rust",
