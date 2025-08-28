@@ -12,9 +12,9 @@ import {
 const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN");
-const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME");
-const TOM_SLAMA_STICKER_SET = Deno.env.get("TOM_SLAMA_STICKER_SET");
-const MARIAN_STICKER_SET = Deno.env.get("MARIAN_STICKER_SET");
+const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME")!;
+const TOM_SLAMA_STICEKR_SET = Deno.env.get("TOM_SLAMA_STICKER_SET")!;
+const MARIAN_STICEKR_SET = Deno.env.get("MARIAN_STICKER_SET")!;
 const STICEKR_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
 
 export const webhookPath = "/tg-webhook";
@@ -34,68 +34,63 @@ const webhookUrlToken = genRandomToken(96);
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 100; // Minimum 100ms between requests
 
-// Get all available sticker sets
-function getAvailableStickerSets(): string[] {
+function getAvailableSticekrSets(): string[] {
   const sets = [];
   if (STICEKR_SET_NAME) sets.push(STICEKR_SET_NAME);
-  if (TOM_SLAMA_STICKER_SET) sets.push(TOM_SLAMA_STICKER_SET);
-  if (MARIAN_STICKER_SET) sets.push(MARIAN_STICKER_SET);
+  if (TOM_SLAMA_STICEKR_SET) sets.push(TOM_SLAMA_STICEKR_SET);
+  if (MARIAN_STICEKR_SET) sets.push(MARIAN_STICEKR_SET);
   return sets;
 }
 
-// Typo-proof text matching function
-function matchesWithTypos(text: string, patterns: string[]): boolean {
-  const normalizedText = text.toLowerCase().replace(/[^\w]/g, '');
-  return patterns.some(pattern => {
-    const normalizedPattern = pattern.toLowerCase().replace(/[^\w]/g, '');
-    // Exact match
-    if (normalizedText.includes(normalizedPattern)) return true;
-    // Simple typo variations (only for patterns of length 4 or more to avoid false positives)
-    if (normalizedPattern.length >= 4) {
-      // Check for missing one character
-      for (let i = 0; i < normalizedPattern.length; i++) {
-        const variant = normalizedPattern.slice(0, i) + normalizedPattern.slice(i + 1);
-        if (variant.length >= 3 && normalizedText.includes(variant)) return true;
-      }
-      // Check for one character substitution
-      for (let i = 0; i < normalizedPattern.length; i++) {
-        for (const c of 'abcdefghijklmnopqrstuvwxyz') {
-          const variant = normalizedPattern.slice(0, i) + c + normalizedPattern.slice(i + 1);
-          if (normalizedText.includes(variant)) return true;
-        }
+function editDistance(a: string, b: string): number {
+  const matrix = Array(a.length + 1).fill(null).map(() =>
+    Array(b.length + 1).fill(0)
+  );
+
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + 1,
+        );
       }
     }
-    return false;
-  });
+  }
+
+  return matrix[a.length][b.length];
 }
 
-// Check if text contains sticker trigger words with typo tolerance
-function isStickerTrigger(text: string): boolean {
-  const stickerVariants = ['sticker', 'sticekr', 'stickr', 'stiker'];
-  const thisVariants = ['this', 'ths', 'thi'];
-  
-  return matchesWithTypos(text, stickerVariants) && matchesWithTypos(text, thisVariants);
+function getSticekrCommand(text: string): string | null {
+  const normalizedText = text.toLowerCase().trim();
+
+  const commands = ["sticker this", "marian this", "tom this"];
+
+  for (const command of commands) {
+    if (editDistance(normalizedText, command) <= 2) {
+      return command;
+    }
+  }
+
+  return null;
 }
 
-// Determine which sticker set to use based on context
-function getStickerSetForContext(message: any): string {
-  const text = message?.text?.toLowerCase() || message?.caption?.toLowerCase() || "";
-  
-  // Check for Marian related content with typo tolerance
-  const marianVariants = ['marian', 'marain', 'marin', 'marián'];
-  if (matchesWithTypos(text, marianVariants) && MARIAN_STICKER_SET) {
-    return MARIAN_STICKER_SET;
+function getSticekrSetForCommand(command: string): string {
+  switch (command) {
+    case "marian this":
+      return MARIAN_STICEKR_SET;
+    case "tom this":
+      return TOM_SLAMA_STICEKR_SET;
+    case "sticker this":
+    default:
+      return STICEKR_SET_NAME;
   }
-  
-  // Check for Tom Sláma related content with typo tolerance
-  const tomVariants = ['tom', 'tomm', 'tomas', 'tomáš'];
-  const slamaVariants = ['sláma', 'slama', 'slamma', 'slamm'];
-  if ((matchesWithTypos(text, tomVariants) || matchesWithTypos(text, slamaVariants)) && TOM_SLAMA_STICKER_SET) {
-    return TOM_SLAMA_STICKER_SET;
-  }
-  
-  // Default to the main sticker set
-  return STICEKR_SET_NAME || "";
 }
 
 async function rateLimitedDelay() {
@@ -205,11 +200,8 @@ async function domeny() {
   }
 
   if (Math.random() < 0.5) {
-    // Get all stickers from all available sets for uniform selection
-    const availableSets = getAvailableStickerSets();
-    if (availableSets.length === 0) return;
-    
-    const allStickers = [];
+    const availableSets = getAvailableSticekrSets();
+    const allSticekrs = [];
     for (const setName of availableSets) {
       try {
         const {
@@ -220,19 +212,19 @@ async function domeny() {
           },
           "getStickerSet",
         );
-        allStickers.push(...sticekrs);
+        allSticekrs.push(...sticekrs);
       } catch (error) {
         console.log(`Failed to get stickers from set ${setName}:`, error);
       }
     }
     
-    if (allStickers.length === 0) return;
+    if (allSticekrs.length === 0) return;
     
-    const randomSticker = allStickers[Math.floor(Math.random() * allStickers.length)];
+    const randomSticekr = allSticekrs[Math.floor(Math.random() * allSticekrs.length)];
     await tgCall(
       {
         chat_id: MAIN_CHAT_ID,
-        sticker: randomSticker.file_id,
+        sticker: randomSticekr.file_id,
       },
       "sendSticker",
     );
@@ -328,22 +320,16 @@ export async function init() {
     !DOMAIN ||
     isNaN(MAIN_CHAT_ID) ||
     !STICEKR_SET_NAME ||
+    !TOM_SLAMA_STICEKR_SET ||
+    !MARIAN_STICEKR_SET ||
     isNaN(STICEKR_SET_OWNER)
   ) {
     console.log(
-      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICEKR_SET_NAME: ${STICEKR_SET_NAME}, STICEKR_SET_OWNER: ${STICEKR_SET_OWNER}`,
+      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICEKR_SET_NAME: ${STICEKR_SET_NAME}, TOM_SLAMA_STICEKR_SET: ${TOM_SLAMA_STICEKR_SET}, MARIAN_STICEKR_SET: ${MARIAN_STICEKR_SET}, STICEKR_SET_OWNER: ${STICEKR_SET_OWNER}`,
     );
     throw new Error(
-      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICEKR_SET_NAME or STICEKR_SET_OWNER is not set",
+      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICEKR_SET_NAME, TOM_SLAMA_STICEKR_SET, MARIAN_STICEKR_SET or STICEKR_SET_OWNER is not set",
     );
-  }
-
-  // Log optional sticker sets if they are configured
-  if (TOM_SLAMA_STICKER_SET) {
-    console.log(`Tom Sláma sticker set: ${TOM_SLAMA_STICKER_SET}`);
-  }
-  if (MARIAN_STICKER_SET) {
-    console.log(`Marian sticker set: ${MARIAN_STICKER_SET}`);
   }
 
   tempDir = await Deno.makeTempDir();
@@ -596,11 +582,12 @@ Be grateful for your abilities and your incredible success and your considerable
     yield* handleLogo(data, text.slice(6));
   }
 
+  const sticekrCommand = getSticekrCommand(text);
   if (
-    isStickerTrigger(text) &&
+    sticekrCommand &&
     data.message.chat.id === MAIN_CHAT_ID
   ) {
-    const result = yield* sticekrThis(data.message.reply_to_message);
+    const result = yield* sticekrThis(data.message.reply_to_message, sticekrCommand);
     if (result !== null) {
       yield await tgCall({
         chat_id: data.message.chat.id,
@@ -974,7 +961,7 @@ async function* handleInlineQuery(data: any) {
   }
 }
 
-async function* sticekrThis(orig_msg: any): AsyncGenerator<any, string | null> {
+async function* sticekrThis(orig_msg: any, command: string): AsyncGenerator<any, string | null> {
   if (!orig_msg) return "wtf";
   let file;
   if (Array.isArray(orig_msg.photo)) {
@@ -1008,13 +995,11 @@ async function* sticekrThis(orig_msg: any): AsyncGenerator<any, string | null> {
   if (res.code !== 0) return "imagemagick is a hoe";
   const sticekr = await Deno.readFile(outFileName);
 
-  // Determine which sticker set to use based on the original message context
-  const targetStickerSet = getStickerSetForContext(orig_msg);
-  if (!targetStickerSet) return "no sticker set configured";
+  const targetSticekrSet = getSticekrSetForCommand(command);
 
   const body = new FormData();
   body.append("user_id", STICEKR_SET_OWNER.toString());
-  body.append("name", targetStickerSet);
+  body.append("name", targetSticekrSet);
   body.append(
     "sticker",
     JSON.stringify({ sticker: "attach://file", emoji_list: ["🤓"] }),
@@ -1031,7 +1016,7 @@ async function* sticekrThis(orig_msg: any): AsyncGenerator<any, string | null> {
 
   const data4 = await tgCall(
     {
-      name: targetStickerSet,
+      name: targetSticekrSet,
     },
     "getStickerSet",
   );
