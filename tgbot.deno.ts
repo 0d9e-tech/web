@@ -446,6 +446,17 @@ async function* handleTgUpdate(data: any) {
   }
 
   if (
+    text.toLowerCase().includes("software") &&
+    !(text.toLowerCase().includes("víc špatný") ||
+      text.toLowerCase().includes("vic spatny"))
+  ) {
+    await tgCall({
+      chat_id: data.message.chat.id,
+      text: "SENTIMENT ANALYSIS: víc software => víc špatný.",
+    });
+  }
+
+  if (
     text.toLowerCase().includes("gnu") &&
     text.toLowerCase().includes("linux") &&
     !text.includes("the Free Software Foundation")
