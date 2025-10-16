@@ -12,6 +12,9 @@ import {
 const indexContent = new TextDecoder().decode(
   await Deno.readFile("index.html"),
 );
+const indxContent = new TextDecoder().decode(
+  await Deno.readFile("indx.html"),
+);
 
 async function handleHttp(conn: Deno.Conn) {
   for await (const e of Deno.serveHttp(conn)) {
@@ -49,16 +52,20 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
     await handleTgRequest(e);
     return null;
   }
-  if (Math.random() < 0.001) {
-    return new Response("Yo mama so fat she became a teapot", { status: 418 });
-  }
 
   if (url.pathname === "/" || url.pathname === "/index.html") {
-    return new Response(indexContent, {
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-      },
-    });
+    return Math.random() < 0.01
+      ? new Response(indxContent, {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+        },
+        status: 418,
+      })
+      : new Response(indexContent, {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+        },
+      });
   }
 
   if (url.pathname === "/postele.html") {
