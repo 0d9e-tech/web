@@ -417,17 +417,6 @@ async function* handleTgUpdate(data: any) {
     );
   }
 
-  if (text.toLowerCase().includes("pivo")) {
-    yield await tgCall(
-      {
-        chat_id: data.message.chat.id,
-        sticker:
-          "CAACAgQAAxUAAWeBX6jI8a_GFYMipcEDK3cpZW0hAAI7FQACdWMQUHHysL9Zw-JuNgQ",
-      },
-      "sendSticker",
-    );
-  }
-
   if (text.toLowerCase().includes("hrovno")) {
     await tgCall({
       chat_id: data.message.chat.id,
