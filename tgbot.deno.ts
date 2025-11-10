@@ -292,7 +292,7 @@ export async function init() {
     chat_id: MAIN_CHAT_ID,
   }, "sendPhoto");
 
-  Deno.cron("tuuuuuuuuuu", "0 12 * * 3#1", () => {
+  Deno.cron("tuuuuuuuuuu", "0 11 * * 4#1", () => {
     tgCall({
       text: "TÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚ",
     });
