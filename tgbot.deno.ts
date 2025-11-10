@@ -278,6 +278,12 @@ export async function init() {
     text: "prokop hazejici vlastovku",
   });
 
+  Deno.cron("tuuuuuuuuuu", "0 12 * * 3#1", () => {
+    tgCall({
+      text: "TÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚ",
+    });
+  });
+
   postGeohash();
 }
 
