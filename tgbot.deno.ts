@@ -12,9 +12,7 @@ import {
 const token = Deno.env.get("TG_BOT_TOKEN");
 const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN");
-const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME")!;
-const TOM_SLAMA_STICEKR_SET = Deno.env.get("TOM_SLAMA_STICKER_SET")!;
-const MARIAN_STICEKR_SET = Deno.env.get("MARIAN_STICKER_SET")!;
+const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME");
 const STICEKR_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
 
 export const webhookPath = "/tg-webhook";
@@ -33,65 +31,6 @@ const webhookUrlToken = genRandomToken(96);
 // Rate limiter to prevent overwhelming the API
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 100; // Minimum 100ms between requests
-
-function getAvailableSticekrSets(): string[] {
-  const sets = [];
-  if (STICEKR_SET_NAME) sets.push(STICEKR_SET_NAME);
-  if (TOM_SLAMA_STICEKR_SET) sets.push(TOM_SLAMA_STICEKR_SET);
-  if (MARIAN_STICEKR_SET) sets.push(MARIAN_STICEKR_SET);
-  return sets;
-}
-
-function editDistance(a: string, b: string): number {
-  const matrix = Array(a.length + 1).fill(null).map(() =>
-    Array(b.length + 1).fill(0)
-  );
-
-  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
-  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
-
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j - 1] + 1,
-        );
-      }
-    }
-  }
-
-  return matrix[a.length][b.length];
-}
-
-function getSticekrCommand(text: string): string | null {
-  const normalizedText = text.toLowerCase().trim();
-
-  const commands = ["sticker this", "marian this", "tom this"];
-
-  for (const command of commands) {
-    if (editDistance(normalizedText, command) <= 2) {
-      return command;
-    }
-  }
-
-  return null;
-}
-
-function getSticekrSetForCommand(command: string): string {
-  switch (command) {
-    case "marian this":
-      return MARIAN_STICEKR_SET;
-    case "tom this":
-      return TOM_SLAMA_STICEKR_SET;
-    case "sticker this":
-    default:
-      return STICEKR_SET_NAME;
-  }
-}
 
 async function rateLimitedDelay() {
   const now = Date.now();
@@ -200,31 +139,20 @@ async function domeny() {
   }
 
   if (Math.random() < 0.5) {
-    const availableSets = getAvailableSticekrSets();
-    const allSticekrs = [];
-    for (const setName of availableSets) {
-      try {
-        const {
-          result: { stickers: sticekrs },
-        } = await tgCall(
-          {
-            name: setName,
-          },
-          "getStickerSet",
-        );
-        allSticekrs.push(...sticekrs);
-      } catch (error) {
-        console.log(`Failed to get stickers from set ${setName}:`, error);
-      }
-    }
-    
-    if (allSticekrs.length === 0) return;
-    
-    const randomSticekr = allSticekrs[Math.floor(Math.random() * allSticekrs.length)];
+    const {
+      result: { stickers: sticekrs },
+    } = await tgCall(
+      {
+        name: STICEKR_SET_NAME,
+      },
+      "getStickerSet",
+    );
+    const { file_id: sticekr } =
+      sticekrs[Math.floor(Math.random() * sticekrs.length)];
     await tgCall(
       {
         chat_id: MAIN_CHAT_ID,
-        sticker: randomSticekr.file_id,
+        sticker: sticekr,
       },
       "sendSticker",
     );
@@ -320,15 +248,13 @@ export async function init() {
     !DOMAIN ||
     isNaN(MAIN_CHAT_ID) ||
     !STICEKR_SET_NAME ||
-    !TOM_SLAMA_STICEKR_SET ||
-    !MARIAN_STICEKR_SET ||
     isNaN(STICEKR_SET_OWNER)
   ) {
     console.log(
-      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICEKR_SET_NAME: ${STICEKR_SET_NAME}, TOM_SLAMA_STICEKR_SET: ${TOM_SLAMA_STICEKR_SET}, MARIAN_STICEKR_SET: ${MARIAN_STICEKR_SET}, STICEKR_SET_OWNER: ${STICEKR_SET_OWNER}`,
+      `TG_BOT_TOKEN: ${token}, TG_MAIN_CHAT_ID: ${MAIN_CHAT_ID}, DOMAIN: ${DOMAIN}, STICEKR_SET_NAME: ${STICEKR_SET_NAME}, STICEKR_SET_OWNER: ${STICEKR_SET_OWNER}`,
     );
     throw new Error(
-      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICEKR_SET_NAME, TOM_SLAMA_STICEKR_SET, MARIAN_STICEKR_SET or STICEKR_SET_OWNER is not set",
+      "TG_BOT_TOKEN, TG_MAIN_CHAT_ID, DOMAIN, STICEKR_SET_NAME or STICEKR_SET_OWNER is not set",
     );
   }
 
@@ -582,12 +508,11 @@ Be grateful for your abilities and your incredible success and your considerable
     yield* handleLogo(data, text.slice(6));
   }
 
-  const sticekrCommand = getSticekrCommand(text);
   if (
-    sticekrCommand &&
+    text.toLowerCase() === "sticker this" &&
     data.message.chat.id === MAIN_CHAT_ID
   ) {
-    const result = yield* sticekrThis(data.message.reply_to_message, sticekrCommand);
+    const result = yield* sticekrThis(data.message.reply_to_message);
     if (result !== null) {
       yield await tgCall({
         chat_id: data.message.chat.id,
@@ -961,7 +886,7 @@ async function* handleInlineQuery(data: any) {
   }
 }
 
-async function* sticekrThis(orig_msg: any, command: string): AsyncGenerator<any, string | null> {
+async function* sticekrThis(orig_msg: any): Promise<string | null> {
   if (!orig_msg) return "wtf";
   let file;
   if (Array.isArray(orig_msg.photo)) {
@@ -995,11 +920,9 @@ async function* sticekrThis(orig_msg: any, command: string): AsyncGenerator<any,
   if (res.code !== 0) return "imagemagick is a hoe";
   const sticekr = await Deno.readFile(outFileName);
 
-  const targetSticekrSet = getSticekrSetForCommand(command);
-
   const body = new FormData();
   body.append("user_id", STICEKR_SET_OWNER.toString());
-  body.append("name", targetSticekrSet);
+  body.append("name", STICEKR_SET_NAME);
   body.append(
     "sticker",
     JSON.stringify({ sticker: "attach://file", emoji_list: ["🤓"] }),
@@ -1016,12 +939,12 @@ async function* sticekrThis(orig_msg: any, command: string): AsyncGenerator<any,
 
   const data4 = await tgCall(
     {
-      name: targetSticekrSet,
+      name: STICEKR_SET_NAME,
     },
     "getStickerSet",
   );
   if (!data4.ok) {
-    return "i ran out of error message ideas: " + JSON.stringify(data4);
+    return "i ran out of error message ideas: " + JSON.stringify(resp4);
   }
   const sticekrId = data4.result.stickers.at(-1).file_id;
   if (!sticekrId) return "i ran out of error message ideas the most";

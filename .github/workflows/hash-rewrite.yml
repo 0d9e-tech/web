@@ -1,0 +1,128 @@
+name: Commit Hash Rewriter
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  rewrite-hashes:
+    name: Rewrite commit hashes to start with 0d9e
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Rewrite commit hashes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the base branch
+          BASE_REF="${{ github.event.pull_request.base.sha }}"
+          
+          # Get list of commits in the PR
+          COMMITS=$(git rev-list --reverse ${BASE_REF}..HEAD)
+          
+          # Check if any commits need rewriting
+          NEEDS_REWRITE=false
+          for commit in $COMMITS; do
+            if [[ ! $commit =~ ^0d9e ]]; then
+              NEEDS_REWRITE=true
+              break
+            fi
+          done
+          
+          if [ "$NEEDS_REWRITE" = false ]; then
+            echo "All commits already start with 0d9e, no rewriting needed"
+            exit 0
+          fi
+          
+          echo "Starting commit hash rewriting process..."
+          
+          # Create a temporary branch for rewriting
+          TEMP_BRANCH="temp-rewrite-$(date +%s)"
+          git checkout -b "$TEMP_BRANCH" "$BASE_REF"
+          
+          # Function to find a hash starting with 0d9e
+          find_0d9e_hash() {
+            local original_commit=$1
+            local commit_msg=$(git log -1 --format=%B "$original_commit")
+            local commit_author=$(git log -1 --format="%an <%ae>" "$original_commit")
+            local commit_date=$(git log -1 --format=%aD "$original_commit")
+            local tree=$(git rev-parse "$original_commit^{tree}")
+            
+            echo "Searching for 0d9e hash for commit: $(echo "$commit_msg" | head -1)"
+            
+            # Try different GPG signature headers to manipulate the hash
+            local nonce=0
+            local max_attempts=100000
+            
+            while [ $nonce -lt $max_attempts ]; do
+              # Create commit with extra GPG header data
+              local extra_header="X-Hash-Nonce: $nonce"
+              
+              # Create the commit with the nonce in a GPG-like header format
+              GIT_AUTHOR_NAME="$commit_author"
+              GIT_AUTHOR_EMAIL="$commit_author"
+              GIT_AUTHOR_DATE="$commit_date"
+              GIT_COMMITTER_NAME="$commit_author"
+              GIT_COMMITTER_EMAIL="$commit_author"
+              GIT_COMMITTER_DATE="$commit_date"
+              
+              # Try with timestamp variation
+              TEST_DATE=$(date -d "$commit_date + $nonce seconds" --rfc-2822 2>/dev/null || date -r $(( $(date -j -f "%a, %d %b %Y %T %z" "$commit_date" "+%s" 2>/dev/null || echo 0) + nonce )) "+%a, %d %b %Y %T %z" 2>/dev/null || echo "$commit_date")
+              
+              export GIT_AUTHOR_DATE="$TEST_DATE"
+              export GIT_COMMITTER_DATE="$TEST_DATE"
+              
+              # Create a test commit
+              local test_commit=$(echo -e "$commit_msg\n\n$extra_header" | git commit-tree "$tree" -p HEAD)
+              local commit_hash=$(echo "$test_commit")
+              
+              # Check if it starts with 0d9e
+              if [[ $commit_hash =~ ^0d9e ]]; then
+                echo "Found hash starting with 0d9e: $commit_hash after $nonce attempts"
+                git reset --hard "$test_commit"
+                return 0
+              fi
+              
+              nonce=$((nonce + 1))
+              
+              # Progress indicator every 10000 attempts
+              if [ $((nonce % 10000)) -eq 0 ]; then
+                echo "Attempt $nonce... (best so far: ${commit_hash:0:4})"
+              fi
+            done
+            
+            echo "Warning: Could not find 0d9e hash after $max_attempts attempts"
+            echo "Using original commit instead"
+            git cherry-pick "$original_commit"
+            return 1
+          }
+          
+          # Rewrite each commit
+          for commit in $COMMITS; do
+            find_0d9e_hash "$commit"
+          done
+          
+          # Force push the rewritten branch
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          git push origin "$TEMP_BRANCH:$BRANCH_NAME" --force
+          
+          echo "Commit hash rewriting complete!"
+          
+          # Add comment to PR
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "✅ Commit hashes have been rewritten to comply with company policy (0d9e prefix requirement)"
