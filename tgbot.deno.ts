@@ -408,12 +408,17 @@ async function* handleTgUpdate(data: any) {
     });
   }
 
-  if (text.toLowerCase().includes("balls")) {
+  if (
+    text.toLowerCase().includes("balls") ||
+    text.toLowerCase().includes("koul")
+  ) {
     yield await tgCall(
       {
         chat_id: data.message.chat.id,
         video_note:
-          "DQACAgQAAxkDAAM8ZWhhSjCXOdVCv7a8SkikjCDwEH4AAiQSAAKXPEhTuYZAGfYG_KwzBA",
+          Math.random() < 0.5
+            ? "DQACAgQAAxkDAAM8ZWhhSjCXOdVCv7a8SkikjCDwEH4AAiQSAAKXPEhTuYZAGfYG_KwzBA"
+            : "DQACAgQAAx0CYbOIYwABAZOgaSF5TvqBIZtJAkkgCyJa5lPTpvUAAmkaAAKkFxBRMvxu2BMBa4c2BA",
       },
       "sendVideoNote"
     );
