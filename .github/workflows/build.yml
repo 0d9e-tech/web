@@ -24,6 +24,8 @@ jobs:
         with:
           push: true
           tags: ghcr.io/0d9e-tech/web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy
         run: |
