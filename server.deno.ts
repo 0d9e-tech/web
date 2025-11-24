@@ -5,48 +5,50 @@ import { serveDir } from "https://deno.land/std@0.190.0/http/file_server.ts";
 import {
   handleRequest as handleTgRequest,
   handleTgWeb,
+  RequestEvent,
   init as tgBotInit,
   webhookPath as tgWebhookPath,
 } from "./tgbot.deno.ts";
 
 const indexContent = new TextDecoder().decode(
-  await Deno.readFile("index.html"),
+  await Deno.readFile("index.html")
 );
-const indxContent = new TextDecoder().decode(
-  await Deno.readFile("indx.html"),
-);
+const indxContent = new TextDecoder().decode(await Deno.readFile("indx.html"));
 
-async function handleHttp(conn: Deno.Conn) {
-  for await (const e of Deno.serveHttp(conn)) {
-    const start = performance.now();
+async function handleHttp(request: Request): Promise<Response> {
+  const start = performance.now();
 
-    const mockEvent: Deno.RequestEvent = {
-      request: e.request,
-      async respondWith(r) {
-        const resp = await r;
-        const end = performance.now();
-        console.log(
-          `${
-            new Date().toISOString()
-          } ${resp.status} ${e.request.method} ${e.request.url} ${
-            (end - start).toFixed(1)
-          }ms`,
-        );
-        return await e.respondWith(resp);
-      },
-    };
+  let resolve: (value: Response) => void;
+  const responsePromise = new Promise<Response>((res) => {
+    resolve = res;
+  });
 
-    handleEvent(mockEvent)
-      .then(async (response) => {
-        if (response !== null) {
-          await mockEvent.respondWith(response);
-        }
-      })
-      .catch((err) => console.error(err));
-  }
+  const mockEvent: RequestEvent = {
+    request,
+    async respondWith(r) {
+      const resp = await r;
+      const end = performance.now();
+      console.log(
+        `${new Date().toISOString()} ${resp.status} ${request.method} ${
+          request.url
+        } ${(end - start).toFixed(1)}ms`
+      );
+      resolve(resp);
+    },
+  };
+
+  handleEvent(mockEvent)
+    .then(async (response) => {
+      if (response !== null) {
+        await mockEvent.respondWith(response);
+      }
+    })
+    .catch((err) => console.error(err));
+
+  return await responsePromise;
 }
 
-async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
+async function handleEvent(e: RequestEvent): Promise<Response | null> {
   const url = new URL(e.request.url);
   if (url.pathname === tgWebhookPath) {
     await handleTgRequest(e);
@@ -56,24 +58,16 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
   if (url.pathname === "/" || url.pathname === "/index.html") {
     return Math.random() < 0.01
       ? new Response(indxContent, {
-        headers: {
-          "content-type": "text/html; charset=utf-8",
-        },
-        status: 418,
-      })
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+          },
+          status: 418,
+        })
       : new Response(indexContent, {
-        headers: {
-          "content-type": "text/html; charset=utf-8",
-        },
-      });
-  }
-
-  if (url.pathname === "/postele.html") {
-    return new Response(posteleContent, {
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-      },
-    });
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+          },
+        });
   }
 
   if (url.pathname === "/about") {
@@ -117,6 +111,4 @@ async function handleEvent(e: Deno.RequestEvent): Promise<Response | null> {
 
 await tgBotInit();
 
-for await (const conn of Deno.listen({ port: 8000 })) {
-  handleHttp(conn).catch((err) => console.error(err));
-}
+Deno.serve({ port: 8000 }, handleHttp);

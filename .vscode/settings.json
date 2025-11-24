@@ -1,6 +1,6 @@
 {
   "deno.enable": true,
-  "deno.unstable": false,
+  "deno.unstable": [],
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
