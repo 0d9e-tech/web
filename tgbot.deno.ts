@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 // The authors disclaim copyright to this source code (they are ashamed to
 // admit they wrote it)
 
@@ -14,8 +15,14 @@ const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
 const DOMAIN = Deno.env.get("DOMAIN")!;
 const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME")!;
 const STICEKR_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
+const PRINTER_TOKEN = Deno.env.get("PRINTER_TOKEN")!;
 
 export const webhookPath = "/tg-webhook";
+
+export type RequestEvent = {
+  request: Request;
+  respondWith(r: Response): Promise<void>;
+};
 
 function genRandomToken(bytes: number) {
   return btoa(
@@ -57,7 +64,7 @@ async function tgCall(
   // Apply rate limiting before making the request
   await rateLimitedDelay();
 
-  let req = await fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
+  const req = await fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -66,7 +73,7 @@ async function tgCall(
   });
 
   try {
-    let resp = await req.json();
+    const resp = await req.json();
 
     // Handle rate limiting with exponential backoff
     if (!resp.ok && resp.error_code === 429 && retryCount < maxRetries) {
@@ -91,7 +98,7 @@ async function tgCall(
       console.log("Req to", endpoint, "with", options, "failed:", resp);
     }
     return resp;
-  } catch (e) {
+  } catch {
     // Handle network errors with exponential backoff
     if (retryCount < maxRetries) {
       const delay = baseDelay * Math.pow(2, retryCount);
@@ -282,8 +289,9 @@ export async function init() {
   );
 
   await tgCall({
-    text: "prokop hazejici vlastovku",
-  });
+    photo: "AgACAgQAAxkBAAIHQmkk0fV6aEF7Rpz_P_DRidFVgittAALWxzEb-Kg4UXc1AknVNzxLAQADAgADeAADNgQ",
+    chat_id: MAIN_CHAT_ID,
+  }, "sendPhoto");
 
   Deno.cron("tuuuuuuuuuu", "0 12 * * 3#1", () => {
     tgCall({
@@ -294,7 +302,7 @@ export async function init() {
   postGeohash();
 }
 
-export async function handleRequest(e: Deno.RequestEvent) {
+export async function handleRequest(e: RequestEvent) {
   if (
     e.request.method.toUpperCase() !== "POST" ||
     e.request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== webhookUrlToken
@@ -330,7 +338,7 @@ async function processTgUpdate(data: any) {
     for await (const data of handleTgUpdate(dato)) {
       for await (const dato of handleTgUpdate(data)) {
         for await (const data of handleTgUpdate(dato)) {
-          for await (const dato of handleTgUpdate(data)) {
+          for await (const _ of handleTgUpdate(data)) {
             tgCall({ text: "🔥" });
           }
         }
@@ -527,6 +535,29 @@ Be grateful for your abilities and your incredible success and your considerable
 
   if (text.startsWith("/logo ") && data.message.chat.id === MAIN_CHAT_ID) {
     yield* handleLogo(data, text.slice(6));
+  }
+
+  const trig = "/řekni_tomovi";
+  if (text.startsWith(trig) && data.message.chat.id === MAIN_CHAT_ID) {
+    const response = await fetch("https://printomat.slama.dev/submit", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        message: `${data.message.from} říká: ${text.slice(trig.length).trim()}`,
+        image: "",
+        token: PRINTER_TOKEN,
+      }).toString(),
+      method: "POST",
+    });
+    const txt = await response.text();
+    await tgCall({
+      chat_id: data.message.chat.id,
+      reply_to_message_id: data.message.message_id,
+      text: `Tom říká (${response.status}): ${
+        /<p>(.*?)<\/p>/.exec(txt)?.[1] ?? txt
+      }`,
+    });
   }
 
   if (
@@ -750,9 +781,8 @@ async function generateLogos(text: string, filename: string) {
   const texted = LOGO_TEMPLATE.replace("TEMPLATETEXT", text.trim());
   await Deno.writeTextFile(`./static/persistent/logos/${filename}.svg`, texted);
   return (
-    await Deno.run({
-      cmd: [
-        "inkscape",
+    await new Deno.Command("inkscape", {
+      args: [
         `./static/persistent/logos/${filename}.svg`,
         "-o",
         `./static/persistent/logos/${filename}.png`,
@@ -760,7 +790,7 @@ async function generateLogos(text: string, filename: string) {
         LOGO_RENDER_SIZE.toString(),
       ],
       stderr: "null",
-    }).status()
+    }).spawn().status
   ).code;
 }
 
@@ -879,13 +909,13 @@ async function* reportProcessResult(
   exitCode: number
 ) {
   const outPath = `${tempDir}/${id}.out`;
-  const fileProc = Deno.run({
-    cmd: ["file", "-ib", outPath],
+  const fileProc = new Deno.Command("file", {
+    args: ["-ib", outPath],
     stdout: "piped",
-  });
+  }).spawn();
+  const out = await fileProc.output();
   // need to await the status to not create zombie processes
-  await fileProc.status();
-  const mime = decoder.decode(await fileProc.output());
+  const mime = decoder.decode(out.stdout);
   contentTypes.set(id, mime);
   const isText =
     mime.startsWith("text/") || mime.startsWith("application/json");
@@ -920,17 +950,15 @@ async function handleCallbackQuery(data: any) {
   if (cbData.startsWith("kill:")) {
     const proc = runningProcesses.get(cbData.slice(5));
     if (proc === undefined) return;
-    const killProc = Deno.run({
-      cmd: ["rkill", "-9", proc.pid.toString()],
-    });
-    await killProc.status();
+    const killProc = new Deno.Command("rkill", {
+      args: ["-9", proc.pid.toString()],
+    }).spawn();
+    await killProc.status;
     return;
   }
 }
 
-export async function handleTgWeb(
-  e: Deno.RequestEvent
-): Promise<Response | null> {
+export async function handleTgWeb(e: RequestEvent): Promise<Response | null> {
   const url = new URL(e.request.url);
   const path = url.pathname.slice(7);
   const ct = contentTypes.get(path);
