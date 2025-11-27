@@ -432,6 +432,19 @@ async function* handleTgUpdate(data: any) {
     );
   }
 
+  if (
+    text.toLowerCase().includes("pad") ||
+    text.toLowerCase().includes("pád")
+  ) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        video_note: "DQACAgQAAxkDAAIHW2kohCvq14qxhtH5p9QUgIYGb8glAAJPHAACYmBJUZ-MT60sG7t5NgQ",
+      },
+      "sendVideoNote"
+    );
+  }
+
   if (text.toLowerCase().includes("doslova")) {
     yield await tgCall(
       {
