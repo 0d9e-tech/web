@@ -186,7 +186,6 @@ const runningProcesses = new Map<string, Deno.ChildProcess>();
 
 const origins = [
   { lat: 50.1005803, lon: 14.3954325 },
-  { lat: 55.6865969, lon: 12.5759392 },
 ];
 async function postGeohash() {
   const upcoming = new Date();
