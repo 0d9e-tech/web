@@ -5,6 +5,7 @@ import { serveDir } from "https://deno.land/std@0.190.0/http/file_server.ts";
 import {
   handleRequest as handleTgRequest,
   handleTgWeb,
+  get_video,
   RequestEvent,
   init as tgBotInit,
   webhookPath as tgWebhookPath,
@@ -88,7 +89,27 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
     return await handleTgWeb(e);
   }
 
+  if (url.pathname.startsWith("/api/videos/")) {
+    const index = parseInt(url.pathname.split('/').pop()!);
+    const videoBytes = get_video(index);
+
+    if (videoBytes === null) {
+      return new Response("Video not found", {
+        status: 404,
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+
+    return new Response(videoBytes, {
+      headers: {
+        "Content-Type": "video/mp4",
+        "Access-Control-Allow-Origin": "*"
+      },
+    });
+  }
+
   const resp = await serveDir(e.request, { fsRoot: "static", quiet: true });
+
   if (![200, 301, 304].includes(resp.status)) {
     if (resp.status !== 404) console.error(resp);
 

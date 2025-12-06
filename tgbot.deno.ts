@@ -187,6 +187,52 @@ const runningProcesses = new Map<string, Deno.ChildProcess>();
 const origins = [
   { lat: 50.1005803, lon: 14.3954325 },
 ];
+
+// In-memory video list for kvh frontend
+const videoList: Uint8Array[] = [];
+
+export function get_video(index: number): Uint8Array | null {
+  if (index < 0 || index >= videoList.length) {
+    return null;
+  }
+  return videoList[index];
+}
+
+async function* handleVideoNote(message: any) {
+  try {
+    const videoNote = message.video_note;
+
+    // Get file info from Telegram
+    const fileData = await tgCall({ file_id: videoNote.file_id }, "getFile");
+    if (!fileData.ok) {
+      console.error("Failed to get file info:", fileData);
+      return;
+    }
+
+    // Download the video note
+    const videoUrl = `https://api.telegram.org/file/bot${token}/${fileData.result.file_path}`;
+    const response = await fetch(videoUrl);
+    if (!response.ok) {
+      console.error("Failed to download video note:", response.status);
+      return;
+    }
+
+    // Store video bytes in memory
+    const videoBytes = new Uint8Array(await response.arrayBuffer());
+    videoList.push(videoBytes);
+
+    console.log(`Downloaded and stored video note. Total videos: ${videoList.length}`);
+
+  } catch (error) {
+    console.error("Error handling video note:", error);
+    yield await tgCall({
+      chat_id: message.chat.id,
+      reply_to_message_id: message.message_id,
+      text: `❌ Failed to process video note: ${error.message}`,
+    });
+  }
+}
+
 async function postGeohash() {
   const upcoming = new Date();
   upcoming.setHours(6);
@@ -353,6 +399,12 @@ async function* handleTgUpdate(data: any) {
   if ("inline_query" in data) return yield* handleInlineQuery(data);
   if ("edited_message" in data) {
     data.message = data.edited_message;
+  }
+
+  // Handle video notes (circular videos)
+  if (data?.message?.video_note) {
+    console.log(`Found video note: ${data.message.video_note.length}s duration`);
+    yield* handleVideoNote(data.message);
   }
 
   const text = data?.message?.text ?? data?.message?.caption;
@@ -986,6 +1038,8 @@ export async function handleTgWeb(e: RequestEvent): Promise<Response | null> {
     headers: { "Content-Type": ct },
   });
 }
+
+
 
 let imageI = 0;
 async function* handleInlineQuery(data: any) {
