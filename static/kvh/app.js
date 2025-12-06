@@ -24,10 +24,32 @@ function loadVideo(src) {
 const physicsData = [];
 const main = document.querySelector('main');
 
+// Get actual viewport dimensions accounting for mobile quirks
+function getViewportDimensions() {
+    const rect = main.getBoundingClientRect();
+    return {
+        width: rect.width,
+        height: rect.height
+    };
+}
+
 // Centralized ball size management
 function getBallRadius() {
-    const k = Math.round(window.innerWidth / 200);
-    return window.innerWidth / (2 * k);
+    const viewport = getViewportDimensions();
+    const minDimension = Math.min(viewport.width, viewport.height);
+
+    // Better scaling for mobile devices
+    if (minDimension < 400) {
+        // Small mobile screens
+        return Math.max(25, minDimension / 12);
+    } else if (minDimension < 800) {
+        // Larger mobile screens and small tablets
+        return Math.max(30, minDimension / 15);
+    } else {
+        // Desktop and large tablets
+        const k = Math.round(viewport.width / 200);
+        return viewport.width / (2 * k);
+    }
 }
 
 function setBallSize(video, radius) {
@@ -39,8 +61,9 @@ function setBallSize(video, radius) {
 function spawnVideo(video) {
     const radius = getBallRadius();
     const diameter = radius * 2;
+    const viewport = getViewportDimensions();
 
-    const x = Math.random() * (window.innerWidth - diameter);
+    const x = Math.random() * (viewport.width - diameter);
     const y = 100;
     const vx = (Math.random() - 0.5) * 4;
     const vy = (Math.random() - 0.5) * 4;
@@ -77,6 +100,8 @@ async function startNextDownload(i) {
 }
 
 function updatePhysics() {
+    const viewport = getViewportDimensions();
+
     for (let i = 0; i < main.children.length; i++) {
         const video = main.children[i];
         const data = physicsData[i];
@@ -94,17 +119,18 @@ function updatePhysics() {
         const centerX = data.x + data.radius;
         const centerY = data.y + data.radius;
 
-        if (centerX - data.radius <= 0 || centerX + data.radius >= window.innerWidth) {
+        // Use viewport dimensions instead of window dimensions
+        if (centerX - data.radius <= 0 || centerX + data.radius >= viewport.width) {
             data.vx = -data.vx * 0.8;
             data.vr *= 0.9;
-            data.x = Math.max(0, Math.min(window.innerWidth - data.radius * 2, data.x));
+            data.x = Math.max(0, Math.min(viewport.width - data.radius * 2, data.x));
         }
 
-        if (centerY + data.radius >= window.innerHeight) {
+        if (centerY + data.radius >= viewport.height) {
             data.vy = -data.vy * 0.8;
             data.vr = data.vx / data.radius; // no slip
             data.vx *= 0.95;
-            data.y = window.innerHeight - data.radius * 2;
+            data.y = viewport.height - data.radius * 2;
         }
 
         video.style.left = data.x + 'px';
@@ -197,7 +223,106 @@ function updateBallRadius() {
     }
 }
 
+// Handle both resize and orientation change events
 window.addEventListener('resize', updateBallRadius);
+window.addEventListener('orientationchange', function() {
+    // Delay to allow viewport to settle after orientation change
+    setTimeout(updateBallRadius, 100);
+});
+
+// Add touch event handling for mobile interaction
+function addTouchInteraction() {
+    let touchStartTime = 0;
+
+    main.addEventListener('touchstart', function(e) {
+        e.preventDefault(); // Prevent scrolling and zooming
+        touchStartTime = Date.now();
+    }, { passive: false });
+
+    main.addEventListener('touchmove', function(e) {
+        e.preventDefault(); // Prevent scrolling
+    }, { passive: false });
+
+    main.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        const touchDuration = Date.now() - touchStartTime;
+
+        // If it's a quick tap (less than 200ms), add some energy to nearby balls
+        if (touchDuration < 200 && e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            const rect = main.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+
+            // Find balls near the touch point and give them a little push
+            for (let i = 0; i < physicsData.length; i++) {
+                const data = physicsData[i];
+                const ballCenterX = data.x + data.radius;
+                const ballCenterY = data.y + data.radius;
+                const distance = Math.sqrt(
+                    Math.pow(touchX - ballCenterX, 2) +
+                    Math.pow(touchY - ballCenterY, 2)
+                );
+
+                // If touch is within 100px of ball center, give it a push
+                if (distance < 100) {
+                    const pushStrength = Math.max(0.5, (100 - distance) / 100 * 3);
+                    const angle = Math.atan2(ballCenterY - touchY, ballCenterX - touchX);
+                    data.vx += Math.cos(angle) * pushStrength;
+                    data.vy += Math.sin(angle) * pushStrength;
+                    data.vr += (Math.random() - 0.5) * 0.2;
+                }
+            }
+        }
+    }, { passive: false });
+}
+
+// Prevent context menu on long press
+main.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+});
+
+// Initialize touch interaction
+addTouchInteraction();
+
+// Handle mobile viewport changes and prevent scrolling
+function initializeMobileHandling() {
+    // Prevent pull-to-refresh on mobile
+    document.body.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 1) {
+            e.preventDefault(); // Prevent pinch zoom
+        }
+    }, { passive: false });
+
+    document.body.addEventListener('touchend', function(e) {
+        if (e.touches.length > 0) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // Handle viewport height changes (mobile keyboard, etc.)
+    let lastViewportHeight = window.innerHeight;
+    window.addEventListener('resize', function() {
+        const currentHeight = window.innerHeight;
+        if (Math.abs(currentHeight - lastViewportHeight) > 100) {
+            // Significant height change, likely keyboard or orientation
+            setTimeout(function() {
+                updateBallRadius();
+                // Ensure balls stay within new boundaries
+                const viewport = getViewportDimensions();
+                for (let i = 0; i < physicsData.length; i++) {
+                    const data = physicsData[i];
+                    data.x = Math.max(0, Math.min(viewport.width - data.radius * 2, data.x));
+                    data.y = Math.max(0, Math.min(viewport.height - data.radius * 2, data.y));
+                }
+            }, 300);
+        }
+        lastViewportHeight = currentHeight;
+    });
+}
+
+// Initialize mobile handling
+initializeMobileHandling();
 
 // Initialize the app
 startNextDownload(0);
