@@ -126,7 +126,7 @@ function updatePhysics() {
             data.x = Math.max(0, Math.min(viewport.width - data.radius * 2, data.x));
         }
 
-        if (centerY - data.radius <= 0 || centerY + data.radius >= viewport.ght) {
+        if (centerY - data.radius <= 0 || centerY + data.radius >= viewport.height) {
             data.vy = -data.vy * 1.1;
             data.vr = data.vx / data.radius; // no slip
             data.vx *= 1.05;
