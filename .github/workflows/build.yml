@@ -54,6 +54,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
+          before=${{ github.event.before }}
+          if [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            before=$(git merge-base amogus HEAD)
+          fi
           gh api \
             --method POST \
             /repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
