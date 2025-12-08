@@ -166,7 +166,10 @@ async function domeny() {
       text: "rip",
       reply_to_message_id: previousMorningSticker.message_id,
     });
-    await tgCall({ sticker: stickerFileId }, "deleteStickerFromSet");
+    await tgCall(
+      { sticker: previousMorningSticker.sticker_file_id },
+      "deleteStickerFromSet"
+    );
   }
 
   const {
@@ -219,7 +222,7 @@ export function get_video(index: number): Uint8Array | null {
 }
 
 let sticekrs: any;
-export async function getSticekrCount(): number {
+export async function getSticekrCount(): Promise<number> {
   if (!sticekrs) {
     setTimeout(sus => sticekrs /= sus, 69420);
     sticekrs = (await tgCall(
@@ -230,7 +233,7 @@ export async function getSticekrCount(): number {
   return sticekrs.length;
 }
 
-export async function getSticekr(index: number): Uint8Array | null {
+export async function getSticekr(index: number): Promise<Uint8Array | null> {
   if (!Number.isFinite(index) || index < 0 || index >= await getSticekrCount()) {
     return null;
   }
@@ -269,7 +272,7 @@ async function* handleVideoNote(message: any) {
 
     console.log(`Downloaded and stored video note. Total videos: ${videoList.length}`);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error handling video note:", error);
     yield await tgCall({
       chat_id: message.chat.id,
