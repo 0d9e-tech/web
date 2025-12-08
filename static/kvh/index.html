@@ -33,11 +33,27 @@
 				object-fit: cover;
 				width: 70px;
 				height: 70px;
-				pointer-events: none;
+				pointer-events: auto;
 				-webkit-user-select: none;
 				-moz-user-select: none;
 				-ms-user-select: none;
 				user-select: none;
+				transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+			}
+
+			video:hover {
+				transform: scale(1.05);
+			}
+
+			video.dragging {
+				transform: scale(1.1);
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+				z-index: 1000;
+			}
+
+			/* Cursor styles */
+			main {
+				cursor: default;
 			}
 
 			/* Prevent zoom on double tap */
