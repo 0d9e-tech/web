@@ -242,7 +242,7 @@ function updatePhysics() {
                 ball2.vy -= impulse * ny;
 
                 // Exchange some spin
-                const spinExchange = (ball1.r + ball2.r)/2 / 10;
+                const spinExchange = (ball1.r + ball2.r)/2 / 100;
                 ball1.vr += spinExchange;
                 ball2.vr -= spinExchange;
             }
