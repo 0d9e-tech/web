@@ -121,15 +121,15 @@ function updatePhysics() {
 
         // Use viewport dimensions instead of window dimensions
         if (centerX - data.radius <= 0 || centerX + data.radius >= viewport.width) {
-            data.vx = -data.vx * 0.8;
+            data.vx = -data.vx * 1.1;
             data.vr *= 0.9;
             data.x = Math.max(0, Math.min(viewport.width - data.radius * 2, data.x));
         }
 
-        if (centerY + data.radius >= viewport.height) {
-            data.vy = -data.vy * 0.8;
+        if (centerY - data.radius <= 0 || centerY + data.radius >= viewport.ght) {
+            data.vy = -data.vy * 1.1;
             data.vr = data.vx / data.radius; // no slip
-            data.vx *= 0.95;
+            data.vx *= 1.05;
             data.y = viewport.height - data.radius * 2;
         }
 
