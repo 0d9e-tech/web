@@ -25,6 +25,8 @@ jobs:
         continue-on-error: true
 
       - name: Set check status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${{ steps.lint.outcome }}" == "success" ]; then
             conclusion="success"
