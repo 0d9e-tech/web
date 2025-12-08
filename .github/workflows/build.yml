@@ -65,5 +65,5 @@ jobs:
             --method POST \
             /repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
             -f 'body=Bruh, learn to code'
-          git reset --hard ${{ github.event.before }}
+          git reset --hard $before
           git push origin HEAD:${{ github.ref }} --force
