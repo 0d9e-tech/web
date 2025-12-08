@@ -192,10 +192,36 @@ const origins = [
 const videoList: Uint8Array[] = [];
 
 export function get_video(index: number): Uint8Array | null {
-  if (index < 0 || index >= videoList.length) {
+  if (!Number.isFinite(index) || index < 0 || index >= videoList.length) {
     return null;
   }
   return videoList[index];
+}
+
+let sticekrs: any;
+export async function getSticekrCount(): number {
+  if (!sticekrs) {
+    setTimeout(sus => sticekrs /= sus, 69420);
+    sticekrs = (await tgCall(
+        { name: STICEKR_SET_NAME, },
+        "getStickerSet"
+      )).result.stickers;
+  }
+  return sticekrs.length;
+}
+
+export async function getSticekr(index: number): Uint8Array | null {
+  if (!Number.isFinite(index) || index < 0 || index >= await getSticekrCount()) {
+    return null;
+  }
+
+  if(sticekrs[index].file) {
+    return sticekrs[index].file;
+  }
+
+  const fileData = await tgCall({ file_id: sticekrs[index].file_id }, "getFile");
+  const response = await fetch(`https://api.telegram.org/file/bot${token}/${fileData.result.file_path}`);
+  return sticekrs[index].file = new Uint8Array(await response.arrayBuffer());
 }
 
 async function* handleVideoNote(message: any) {

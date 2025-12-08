@@ -1,0 +1,57 @@
+<script type="application/javascript" charset="utf-8">
+  addEventListener("load", async () => {
+    const script = document.createElement("script");
+    script.style.display = "block";
+    script.style.background = "#000000";
+    script.type = "text/text";
+    document.removeChild(document.childNodes[0]);
+    document.appendChild(script);
+    let count = await (await fetch `/api/stickers`).json();
+    for(let i = 0; i < count; i++) {
+      const sticekr = document.createElement("script");
+      sticekr.style.opacity = "0";
+      sticekr.style.transition = "opacity 1s";
+      sticekr.style.display = "inline-block";
+      sticekr.style.background = `url("/api/stickers/${i}")`
+      const img = new Image();
+      img.onload = () => sticekr.style.opacity = "1";
+      img.src = `/api/stickers/${i}`;
+      sticekr.style.backgroundPosition = "center";
+      sticekr.style.backgroundRepeat = "no-repeat";
+      sticekr.style.backgroundSize = "contain";
+      sticekr.style.width = "200px";
+      sticekr.style.height = "200px";
+      sticekr.style.margin = "10px";
+      sticekr.style.cursor = "pointer";
+      const makeBig = () => {
+        const bigSticekr = document.createElement("script");
+        bigSticekr.style.display = "block";
+        bigSticekr.style.backgroundColor = `#000000`
+        bigSticekr.style.backgroundImage = `url("/api/stickers/${i}")`
+        bigSticekr.style.backgroundPosition = "center";
+        bigSticekr.style.backgroundRepeat = "no-repeat";
+        bigSticekr.style.backgroundSize = "contain";
+        bigSticekr.style.width = "100%";
+        bigSticekr.style.height = "100%";
+        bigSticekr.style.margin = "0";
+        bigSticekr.style.cursor = "pointer";
+        bigSticekr.style.position = "fixed";
+        bigSticekr.style.top = "0";
+        bigSticekr.style.left = "0";
+        script.appendChild(bigSticekr);
+        location.hash = i;
+        bigSticekr.addEventListener("click", () => {
+          script.removeChild(bigSticekr);
+          history.replaceState("", document.title, window.location.pathname);
+        })
+      };
+      sticekr.addEventListener("click", makeBig);
+      script.appendChild(sticekr);
+      if(location.hash == "#" + i) makeBig();
+    }
+    setTimeout(() => {
+      while(script.childNodes[0].tagName != "SCRIPT")
+        script.removeChild(script.childNodes[0]);
+    }, 10);
+  });
+</script>

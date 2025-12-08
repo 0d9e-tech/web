@@ -6,6 +6,8 @@ import {
   handleRequest as handleTgRequest,
   handleTgWeb,
   get_video,
+  getSticekr,
+  getSticekrCount,
   RequestEvent,
   init as tgBotInit,
   webhookPath as tgWebhookPath,
@@ -104,6 +106,28 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
       headers: {
         "Content-Type": "video/mp4",
         "Access-Control-Allow-Origin": "*"
+      },
+    });
+  }
+
+  if (url.pathname == "/api/stickers") {
+    return new Response(await getSticekrCount(), { headers: { "Content-Type": "application/json" } },)
+  }
+  
+  if (url.pathname.startsWith("/api/stickers/")) {
+    const index = parseInt(url.pathname.split('/').pop()!);
+    const sticekrBytes = await getSticekr(index);
+
+    if (sticekrBytes === null) {
+      return new Response("Sticker not found", {
+        status: 404,
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+
+    return new Response(sticekrBytes, {
+      headers: {
+        "Content-Type": "image/webp"
       },
     });
   }
