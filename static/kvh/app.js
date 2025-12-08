@@ -121,15 +121,16 @@ function updatePhysics() {
 
         // Use viewport dimensions instead of window dimensions
         if (centerX - data.radius <= 0 || centerX + data.radius >= viewport.width) {
-            data.vx = -data.vx * 1.1;
-            data.vr *= 0.9;
+            data.vx = -data.vx * 1.2;
+            data.vr *= 1.1;
+            data.vy *= 1.1;
             data.x = Math.max(0, Math.min(viewport.width - data.radius * 2, data.x));
         }
 
         if (centerY - data.radius <= 0 || centerY + data.radius >= viewport.height) {
-            data.vy = -data.vy * 1.1;
-            data.vr = data.vx / data.radius; // no slip
-            data.vx *= 1.05;
+            data.vy = -data.vy * 1.2;
+            data.vr = 1.1; // slipy
+            data.vx *= 1.1;
             data.y = Math.max(0, Math.min(viewport.height - data.radius * 2, data.y));
         }
 
@@ -169,11 +170,11 @@ function updatePhysics() {
                 const areTouching = speed1 < 1 && speed2 < 1;
 
                 if (areTouching) {
-                    const avgSpin = (ball1.vr + ball2.vr) * 0.5;
+                    const avgSpin = (ball1.vr + ball2.vr) * 1.5;
                     ball1.vr = avgSpin;
                     ball2.vr = avgSpin;
 
-                    const separationForce = overlap * 0.1;
+                    const separationForce = overlap * 0.05;
                     ball1.vx -= nx * separationForce;
                     ball1.vy -= ny * separationForce;
                     ball2.vx += nx * separationForce;
