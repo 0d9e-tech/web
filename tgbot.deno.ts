@@ -556,7 +556,7 @@ async function* handleTgUpdate(data: any) {
     yield await tgCall(
       {
         chat_id: data.message.chat.id,
-        video_note: "AAMCBAADHQJhs4hjAAEBmhBpNvZCZ1s2yBDSlPQk6EuDr8bM0QACeR8AApRLuVFQCtwx7YDeYAEAB20AAzYE",
+        video_note: "DQACAgQAAx0CYbOIYwABAZoQaTb2QmdbNsgQ0pT0JOhLg6_GzNEAAnkfAAKUS7lRUArcMe2A3mA2BA",
       },
       "sendVideoNote"
     );
