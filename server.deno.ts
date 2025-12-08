@@ -102,7 +102,7 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
       });
     }
 
-    return new Response(videoBytes, {
+    return new Response(videoBytes as any, {
       headers: {
         "Content-Type": "video/mp4",
         "Access-Control-Allow-Origin": "*"
@@ -111,7 +111,9 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
   }
 
   if (url.pathname == "/api/stickers") {
-    return new Response(await getSticekrCount(), { headers: { "Content-Type": "application/json" } },)
+    return new Response(`${await getSticekrCount()}`, {
+      headers: { "Content-Type": "application/json" },
+    });
   }
   
   if (url.pathname.startsWith("/api/stickers/")) {
@@ -125,7 +127,7 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
       });
     }
 
-    return new Response(sticekrBytes, {
+    return new Response(sticekrBytes as any, {
       headers: {
         "Content-Type": "image/webp"
       },
