@@ -2,7 +2,7 @@
 // The authors disclaim copyright to this source code (they are ashamed to
 // admit they wrote it)
 
-import unidecode from "npm:unidecode";
+import unidecode from "npm:unidecode@1.1.0";
 import { geohash } from "./geohash.deno.ts";
 import {
   getImageForPoint,
