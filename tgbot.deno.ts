@@ -160,6 +160,15 @@ async function domeny() {
     );
   }
 
+  if (previousMorningSticker && !previousMorningSticker.has_reaction) {
+    await tgCall({
+      chat_id: MAIN_CHAT_ID,
+      text: "rip",
+      reply_to_message_id: previousMorningSticker.message_id,
+    });
+    await tgCall({ sticker: stickerFileId }, "deleteStickerFromSet");
+  }
+
   const {
     result: { stickers: sticekrs },
   }: any = await tgCall(
@@ -170,19 +179,30 @@ async function domeny() {
   );
   const { file_id: sticekr } =
     sticekrs[Math.floor(Math.random() * sticekrs.length)];
-  await tgCall(
-    {
-      chat_id: MAIN_CHAT_ID,
-      sticker: sticekr,
-      reply_to_message_id: 97776,
-    },
-    "sendSticker"
-  );
+  const stickerResponse = await tgCall({
+    chat_id: MAIN_CHAT_ID,
+    sticker: sticekr,
+    reply_to_message_id: 97776,
+  }, "sendSticker" );
+
+  if (stickerResponse.ok) {
+    previousMorningSticker = {
+      message_id: stickerResponse.result.message_id,
+      sticker_file_id: sticekr,
+      has_reaction: false,
+    };
+  }
 }
 
 let tempDir = "";
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.ChildProcess>();
+
+let previousMorningSticker: {
+  message_id: number;
+  sticker_file_id: string;
+  has_reaction: boolean;
+} | null = null;
 
 const origins = [
   { lat: 50.1005803, lon: 14.3954325 },
@@ -354,6 +374,7 @@ export async function init() {
         "callback_query",
         "inline_query",
         "edited_message",
+        "message_reaction",
       ],
     },
     "setWebhook"
@@ -423,6 +444,13 @@ async function* handleTgUpdate(data: any) {
   data.message ??= data.result;
   if ("callback_query" in data) return handleCallbackQuery(data);
   if ("inline_query" in data) return yield* handleInlineQuery(data);
+  if ("message_reaction" in data) {
+    if (previousMorningSticker &&
+        data.message_reaction.message_id === previousMorningSticker.message_id) {
+      previousMorningSticker.has_reaction = true;
+    }
+    return;
+  }
   if ("edited_message" in data) {
     data.message = data.edited_message;
   }
