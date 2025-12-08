@@ -106,7 +106,7 @@ function updatePhysics() {
         const centerX = data.x + data.radius;
         const centerY = data.y + data.radius;
 
-	const high_update = 1.1;
+	const high_update = 1.05;
 	const low_update = 1.0;
 
         // Use viewport dimensions instead of window dimensions
@@ -160,7 +160,7 @@ function updatePhysics() {
                 const areTouching = speed1 < 1 && speed2 < 1;
 
                 if (areTouching) {
-                    const avgSpin = (ball1.vr + ball2.vr) * 1.5;
+                    const avgSpin = (ball1.vr + ball2.vr) * 1.05;
                     ball1.vr = avgSpin;
                     ball2.vr = avgSpin;
 
