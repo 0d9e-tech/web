@@ -130,7 +130,7 @@ function updatePhysics() {
             data.vy = -data.vy * 1.1;
             data.vr = data.vx / data.radius; // no slip
             data.vx *= 1.05;
-            data.y = viewport.height - data.radius * 2;
+            data.y = Math.max(0, Math.min(viewport.height - data.radius * 2, data.y));
         }
 
         video.style.left = data.x + 'px';
