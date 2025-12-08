@@ -550,6 +550,18 @@ async function* handleTgUpdate(data: any) {
     );
   }
 
+  if (
+    text.toLowerCase().includes("fit")
+  ) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        video_note: "AAMCBAADHQJhs4hjAAEBmhBpNvZCZ1s2yBDSlPQk6EuDr8bM0QACeR8AApRLuVFQCtwx7YDeYAEAB20AAzYE",
+      },
+      "sendVideoNote"
+    );
+  }
+
   if (text.toLowerCase().includes("doslova")) {
     yield await tgCall(
       {
