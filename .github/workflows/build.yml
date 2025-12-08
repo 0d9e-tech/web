@@ -24,6 +24,21 @@ jobs:
         id: lint
         continue-on-error: true
 
+      - name: Set check status
+        run: |
+          if [ "${{ steps.lint.outcome }}" == "success" ]; then
+            conclusion="success"
+          else
+            conclusion="failure"
+          fi
+          gh api --method POST /repos/${{ github.repository }}/check-runs \
+            -f name="Deno Lint" \
+            -f head_sha="${{ github.sha }}" \
+            -f status="completed" \
+            -f conclusion="$conclusion" \
+            -f output.title="Deno Lint Results" \
+            -f output.summary="Deno lint completed with $conclusion."
+
       # if ok: build and deploy
       - name: Setup Docker Buildx
         if: ${{ steps.lint.outcome == 'success' }}
@@ -38,18 +53,19 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        if: ${{ steps.lint.outcome == 'success' }}
+        if: ${{ (github.ref == 'refs/heads/amogus' || github.ref == 'refs/heads/sus') && steps.lint.outcome == 'success' }}
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ghcr.io/0d9e-tech/web:latest
+          tags: ghcr.io/0d9e-tech/web:${{ github.ref == 'refs/heads/amogus' && 'staging' || 'latest' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Deploy
-        if: ${{ github.ref == 'refs/heads/amogus' && steps.lint.outcome == 'success' }}
+        if: ${{ (github.ref == 'refs/heads/amogus' || github.ref == 'refs/heads/sus') && steps.lint.outcome == 'success' }}
         run: |
-          curl --fail-with-body --no-progress-meter -i https://0d9e.tech/deploy -X POST -H "x-token: ${{ secrets.DEPLOY_TOKEN }}"
+          curl --fail-with-body --no-progress-meter -i https://0d9e.tech/deploy -X POST \
+            -H "x-token: ${{ github.ref == 'refs/heads/amogus' && secrets.STAGING_TOKEN || secrets.DEPLOY_TOKEN }}"
 
       # else: revert the commit(s)
       - name: Revert commit(s)
