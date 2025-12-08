@@ -49,7 +49,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/amogus' && steps.lint.outcome == 'success' }}
         run: |
           curl --fail-with-body --no-progress-meter -i https://0d9e.tech/deploy -X POST -H "x-token: ${{ secrets.DEPLOY_TOKEN }}"
-      
+
       # else: revert the commit(s)
       - name: Revert commit(s)
         if: ${{ steps.lint.outcome != 'success' }}
