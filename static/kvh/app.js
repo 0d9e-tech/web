@@ -13,6 +13,37 @@ function loadVideo(src) {
 const physicsData = [];
 const main = document.querySelector('main');
 
+// Audio context for collision sounds
+let audioContext;
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
+    }
+}
+
+// Play collision sound
+function playCollisionSound(intensity = 0.5) {
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Create a "pop" sound with frequency based on collision intensity
+    oscillator.frequency.setValueAtTime(200 + intensity * 300, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.1);
+
+    // Volume envelope
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(Math.min(0.1, intensity * 0.2), audioContext.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.1);
+}
+
 // Drag and drop state management
 const dragState = {
     isDragging: false,
@@ -137,6 +168,8 @@ function updatePhysics() {
 
         // Simple wall collision with spin effects
         if (centerX - data.radius <= 0 || centerX + data.radius >= viewport.width) {
+            const bounceIntensity = Math.abs(data.vx) / 10;
+            playCollisionSound(bounceIntensity);
             data.vx *= -0.9; // Lose energy on bounce
             data.vy += data.vr * 0.5; // Spin affects bounce direction
             data.vr *= 0.8; // Lose some spin
@@ -144,6 +177,8 @@ function updatePhysics() {
         }
 
         if (centerY - data.radius <= 0 || centerY + data.radius >= viewport.height) {
+            const bounceIntensity = Math.abs(data.vy) / 10;
+            playCollisionSound(bounceIntensity);
             data.vy *= -0.9; // Lose energy on bounce
             data.vx += data.vr * 0.5; // Spin affects bounce direction
             data.vr *= 0.8; // Lose some spin
@@ -193,6 +228,11 @@ function updatePhysics() {
                 const dvn = dvx * nx + dvy * ny;
 
                 const impulse = dvn * 0.8;
+
+                // Play collision sound based on impact force
+                const collisionIntensity = Math.abs(impulse) / 5;
+                playCollisionSound(collisionIntensity);
+
                 ball1.vx += impulse * nx;
                 ball1.vy += impulse * ny;
                 ball2.vx -= impulse * nx;
@@ -233,6 +273,7 @@ function addTouchInteraction() {
 
     main.addEventListener('touchstart', function(e) {
         e.preventDefault();
+        initAudio(); // Initialize audio on first touch
         touchStartTime = Date.now();
 
         if (e.touches.length === 1) {
@@ -320,6 +361,7 @@ addTouchInteraction();
 function addMouseInteraction() {
     main.addEventListener('mousedown', function(e) {
         e.preventDefault();
+        initAudio(); // Initialize audio on first click
 
         const pos = getRelativePosition(e.clientX, e.clientY);
         const ballIndex = findBallAtPosition(pos.x, pos.y);
