@@ -106,18 +106,21 @@ function updatePhysics() {
         const centerX = data.x + data.radius;
         const centerY = data.y + data.radius;
 
+	const high_update = 1.1;
+	const low_update = 1.0;
+
         // Use viewport dimensions instead of window dimensions
         if (centerX - data.radius <= 0 || centerX + data.radius >= viewport.width) {
-            data.vx = -data.vx * 1.2;
-            data.vr *= 1.1;
-            data.vy *= 1.1;
+            data.vx *= -high_update;
+            data.vy *= low_update;
+            data.vr *= low_update; // trencle
             data.x = Math.max(0, Math.min(viewport.width - data.radius * 2, data.x));
         }
 
         if (centerY - data.radius <= 0 || centerY + data.radius >= viewport.height) {
-            data.vy = -data.vy * 1.2;
-            data.vr = 1.1; // slipy
-            data.vx *= 1.1;
+            data.vy *= -high_update;
+            data.vx *= low_update;
+            data.vr *= low_update; // slipy
             data.y = Math.max(0, Math.min(viewport.height - data.radius * 2, data.y));
         }
 
