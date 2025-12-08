@@ -153,7 +153,7 @@ function updatePhysics() {
             continue;
         }
 
-        //data.vy += 0.2;
+        data.vy += 0.2;
 
         data.x += data.vx;
         data.y += data.vy;
