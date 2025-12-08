@@ -153,35 +153,38 @@ function updatePhysics() {
             continue;
         }
 
-        data.vy += 0.2;
+        //data.vy += 0.2;
 
         data.x += data.vx;
         data.y += data.vy;
         data.r += data.vr;
 
-        const maxSpin = 3; // Increased from 1 to allow more dramatic spinning
-        if (data.vr > maxSpin) data.vr = maxSpin;
-        if (data.vr < -maxSpin) data.vr = -maxSpin;
+        const maxSpin = 3;
+        if (data.r > maxSpin) data.r = maxSpin;
+        if (data.r < -maxSpin) data.r = -maxSpin;
 
         const centerX = data.x + data.radius;
         const centerY = data.y + data.radius;
+
+        const high_update = 1.05;
+        const low_update = 0.97;
 
         // Simple wall collision with spin effects
         if (centerX - data.radius <= 0 || centerX + data.radius >= viewport.width) {
             const bounceIntensity = Math.abs(data.vx) / 10;
             playCollisionSound(bounceIntensity);
-            data.vx *= -0.9; // Lose energy on bounce
-            data.vy += data.vr * 0.5; // Spin affects bounce direction
-            data.vr *= 0.8; // Lose some spin
+            data.vx *= -high_update;
+            data.vy *= high_update;
+            data.vr *= low_update;
             data.x = Math.max(0, Math.min(viewport.width - data.radius * 2, data.x));
         }
 
         if (centerY - data.radius <= 0 || centerY + data.radius >= viewport.height) {
             const bounceIntensity = Math.abs(data.vy) / 10;
             playCollisionSound(bounceIntensity);
-            data.vy *= -0.9; // Lose energy on bounce
-            data.vx += data.vr * 0.5; // Spin affects bounce direction
-            data.vr *= 0.8; // Lose some spin
+            data.vy *= -high_update;
+            data.vx *= high_update;
+            data.vr *= low_update;
             data.y = Math.max(0, Math.min(viewport.height - data.radius * 2, data.y));
         }
 
