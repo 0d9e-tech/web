@@ -1,14 +1,3 @@
-async function fetchNthVideo(index) {
-    try {
-        const response = await fetch();
-        if (response.ok) {
-            const blob = await response.blob();
-            return URL.createObjectURL(blob);
-        } 
-    } catch (error) { }
-    return null; // No more videos
-}
-
 function loadVideo(src) {
     return new Promise((resolve, reject) => {
         const video = document.createElement('video');
@@ -87,9 +76,7 @@ function spawnVideo(video) {
     console.log('Spawned video:', video.src, 'at', x, y, 'velocity', vx, vy);
 }
 
-let currentIndex = 0;
-
-async function startNextDownload(i) {
+function startNextDownload(i) {
     loadVideo(`/api/videos/${i}`)
         .then(spawnVideo)
         .then(function() { setTimeout(function(){startNextDownload(i+1);},2000);})
@@ -225,8 +212,8 @@ function updateBallRadius() {
 }
 
 // Handle both resize and orientation change events
-window.addEventListener('resize', updateBallRadius);
-window.addEventListener('orientationchange', function() {
+globalThis.addEventListener('resize', updateBallRadius);
+globalThis.addEventListener('orientationchange', function() {
     // Delay to allow viewport to settle after orientation change
     setTimeout(updateBallRadius, 100);
 });
@@ -302,9 +289,9 @@ function initializeMobileHandling() {
     }, { passive: false });
 
     // Handle viewport height changes (mobile keyboard, etc.)
-    let lastViewportHeight = window.innerHeight;
-    window.addEventListener('resize', function() {
-        const currentHeight = window.innerHeight;
+    let lastViewportHeight = globalThis.innerHeight;
+    globalThis.addEventListener('resize', function() {
+        const currentHeight = globalThis.innerHeight;
         if (Math.abs(currentHeight - lastViewportHeight) > 100) {
             // Significant height change, likely keyboard or orientation
             setTimeout(function() {

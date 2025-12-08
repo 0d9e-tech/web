@@ -8,8 +8,8 @@ async function getDjiaFor(key: string) {
   const stored = djiaCache.get(key);
   if (stored) return await stored;
 
-  let resolve = (x: string) => {};
-  let reject = (x: string) => {};
+  let resolve = (_x: string) => {};
+  let reject = (_x: string) => {};
   const promise = new Promise<string>((res, rej) => {
     resolve = res;
     reject = rej;
