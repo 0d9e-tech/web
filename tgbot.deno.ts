@@ -384,7 +384,7 @@ export async function init() {
   );
 
   await tgCall({
-    photo: "AgACAgQAAxkBAAIHQmkk0fV6aEF7Rpz_P_DRidFVgittAALWxzEb-Kg4UXc1AknVNzxLAQADAgADeAADNgQ",
+    photo: `https://${DOMAIN}/startup.jpg`,
     chat_id: MAIN_CHAT_ID,
   }, "sendPhoto");
 
