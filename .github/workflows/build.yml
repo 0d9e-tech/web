@@ -20,7 +20,7 @@ jobs:
         uses: denoland/setup-deno@v1
 
       - name: Run Deno lint
-        run: deno lint
+        run: deno check && deno lint
         id: lint
         continue-on-error: true
 
