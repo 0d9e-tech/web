@@ -69,6 +69,18 @@ jobs:
           curl --fail-with-body --no-progress-meter -i https://0d9e.tech/deploy -X POST \
             -H "x-token: ${{ github.ref == 'refs/heads/amogus' && secrets.STAGING_TOKEN || secrets.DEPLOY_TOKEN }}"
 
+      - name: Comment
+        if: ${{ github.ref == 'refs/heads/amogus' && steps.lint.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          num=$(gh pr list -B sus -H amogus --json number | jq .[0].number -r)
+          if [ "$num" = "null" ]; then
+            gh pr create --base sus --head amogus --title "Release to sus" --body ""
+            num=$(gh pr list -B sus -H amogus --json number | jq .[0].number -r)
+          fi
+          gh pr comment $num --body "@${{ github.actor }} Your changes were deployed to staging, you can merge them here."
+
       # else: revert the commit(s)
       - name: Revert commit(s)
         if: ${{ steps.lint.outcome != 'success' }}
