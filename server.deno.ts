@@ -102,7 +102,7 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
       });
     }
 
-    return new Response(videoBytes.buffer, {
+    return new Response(videoBytes.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": "video/mp4",
         "Access-Control-Allow-Origin": "*"
@@ -127,7 +127,7 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
       });
     }
 
-    return new Response(sticekrBytes.buffer, {
+    return new Response(sticekrBytes.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": "image/webp"
       },
