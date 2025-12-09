@@ -19,6 +19,8 @@ const PRINTER_TOKEN = Deno.env.get("PRINTER_TOKEN")!;
 
 export const webhookPath = "/tg-webhook";
 
+const bootId = Math.random().toString(36).slice(2, 10);
+
 export type RequestEvent = {
   request: Request;
   respondWith(r: Response): Promise<void>;
@@ -383,10 +385,15 @@ export async function init() {
     "setWebhook"
   );
 
-  await tgCall({
-    photo: `https://${DOMAIN}/startup.jpg`,
-    chat_id: MAIN_CHAT_ID,
-  }, "sendPhoto");
+  setTimeout(async () => {
+    await tgCall(
+      {
+        photo: `https://${DOMAIN}/startup.jpg?q=${bootId}`,
+        chat_id: MAIN_CHAT_ID,
+      },
+      "sendPhoto"
+    );
+  }, 2000);
 
   Deno.cron("tuuuuuuuuuu", "0 11 * * 4#1", () => {
     tgCall({
