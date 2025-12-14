@@ -3,18 +3,19 @@
 
 import { serveDir } from "https://deno.land/std@0.190.0/http/file_server.ts";
 import {
-  handleRequest as handleTgRequest,
-  handleTgWeb,
   get_video,
   getSticekr,
   getSticekrCount,
-  RequestEvent,
-  init as tgBotInit,
-  webhookPath as tgWebhookPath,
-} from "./tgbot.deno.ts";
+  handleTgWeb,
+} from "./tg/bot.deno.ts";
+import { init as tgBotInit } from "./tg/init.deno.ts";
+import { webhookPath as tgWebhookPath } from "./tg/utils.deno.ts";
+import { handleReplication, processTgUpdate } from "./replication.deno.ts";
+import { RequestEvent } from "./utils.deno.ts";
+import { webhookUrlToken } from "./tg/utils.deno.ts";
 
 const indexContent = new TextDecoder().decode(
-  await Deno.readFile("index.html")
+  await Deno.readFile("index.html"),
 );
 const indxContent = new TextDecoder().decode(await Deno.readFile("indx.html"));
 
@@ -32,9 +33,11 @@ async function handleHttp(request: Request): Promise<Response> {
       const resp = await r;
       const end = performance.now();
       console.log(
-        `${new Date().toISOString()} ${resp.status} ${request.method} ${
-          request.url
-        } ${(end - start).toFixed(1)}ms`
+        `${
+          new Date().toISOString()
+        } ${resp.status} ${request.method} ${request.url} ${
+          (end - start).toFixed(1)
+        }ms`,
       );
       resolve(resp);
     },
@@ -46,7 +49,12 @@ async function handleHttp(request: Request): Promise<Response> {
         await mockEvent.respondWith(response);
       }
     })
-    .catch((err) => console.error(err));
+    .catch((err) => {
+      console.error(err);
+      mockEvent.respondWith(
+        new Response("Internal Server Error", { status: 500 }),
+      );
+    });
 
   return await responsePromise;
 }
@@ -54,23 +62,52 @@ async function handleHttp(request: Request): Promise<Response> {
 async function handleEvent(e: RequestEvent): Promise<Response | null> {
   const url = new URL(e.request.url);
   if (url.pathname === tgWebhookPath) {
-    await handleTgRequest(e);
+    if (
+      e.request.method.toUpperCase() !== "POST" ||
+      e.request.headers.get("X-Telegram-Bot-Api-Secret-Token") !==
+        webhookUrlToken
+    ) {
+      return new Response("You shall not pass", {
+        status: 401,
+        headers: {
+          "Content-Type": "text/plain",
+        },
+      });
+    }
+
+    const data = await e.request.json();
+
+    await Promise.all([
+      e.respondWith(
+        new Response("processing", {
+          status: 200,
+          headers: {
+            "Content-Type": "text/plain",
+          },
+        }),
+      ),
+      processTgUpdate(data, 0),
+    ]);
     return null;
   }
 
   if (url.pathname === "/" || url.pathname === "/index.html") {
     return Math.random() < 0.01
       ? new Response(indxContent, {
-          headers: {
-            "content-type": "text/html; charset=utf-8",
-          },
-          status: 418,
-        })
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+        },
+        status: 418,
+      })
       : new Response(indexContent, {
-          headers: {
-            "content-type": "text/html; charset=utf-8",
-          },
-        });
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+        },
+      });
+  }
+
+  if (url.pathname.startsWith("/replication/")) {
+    return await handleReplication(e);
   }
 
   if (url.pathname === "/about") {
@@ -92,7 +129,7 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
   }
 
   if (url.pathname.startsWith("/api/videos/")) {
-    const index = parseInt(url.pathname.split('/').pop()!);
+    const index = parseInt(url.pathname.split("/").pop()!);
     const videoBytes = get_video(index);
 
     if (videoBytes === null) {
@@ -105,7 +142,7 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
     return new Response(videoBytes.buffer as ArrayBuffer, {
       headers: {
         "Content-Type": "video/mp4",
-        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Origin": "*",
       },
     });
   }
@@ -115,9 +152,9 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
       headers: { "Content-Type": "application/json" },
     });
   }
-  
+
   if (url.pathname.startsWith("/api/stickers/")) {
-    const index = parseInt(url.pathname.split('/').pop()!);
+    const index = parseInt(url.pathname.split("/").pop()!);
     const sticekrBytes = await getSticekr(index);
 
     if (sticekrBytes === null) {
@@ -129,7 +166,7 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
 
     return new Response(sticekrBytes.buffer as ArrayBuffer, {
       headers: {
-        "Content-Type": "image/webp"
+        "Content-Type": "image/webp",
       },
     });
   }
@@ -158,4 +195,4 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
 
 await tgBotInit();
 
-Deno.serve({ port: 8000 }, handleHttp);
+Deno.serve({ port: parseInt(Deno.env.get("PORT") || "8000") }, handleHttp);
