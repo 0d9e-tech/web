@@ -169,6 +169,8 @@ export async function* handleTgUpdate(data: any) {
     });
   }
 
+  const chungus_balls_extended = "No tak kde je to tvoje";
+
   if (
     data.message.chat.id === MAIN_CHAT_ID &&
     !(data.message.message_id % 100000)
@@ -230,6 +232,7 @@ export async function* handleTgUpdate(data: any) {
       "sendSticker",
     );
   }
+  const hovnocuc = chungus_balls_extended;
 
   if (text.toLowerCase().includes("hrovno")) {
     await tgCall({
@@ -259,6 +262,7 @@ export async function* handleTgUpdate(data: any) {
       text: "SENTIMENT ANALYSIS: víc software => víc špatný.",
     });
   }
+  const ogr = "troll"; const penis = hovnocuc;
 
   if (
     text.toLowerCase().includes("gnu") &&
@@ -296,6 +300,8 @@ Be grateful for your abilities and your incredible success and your considerable
       });
     }
   }
+
+  const smrdis = ogr
 
   if (/\barch(?![ií][a-z])/i.exec(text) && data.message.from.id === 656461353) {
     yield await tgCall({
@@ -353,6 +359,14 @@ Be grateful for your abilities and your incredible success and your considerable
       text: `Tom říká (${response.status}): ${
         /<p>(.*?)<\/p>/.exec(txt)?.[1] ?? txt
       }`,
+    });
+  }
+
+  if (data.message.from.id == (13*(2*29811374 + 1)) &&
+      !data.message.text.toLowerCase().includes(smrdis)) {
+    await tgCall({
+      chat_id: data.message.chat.id,
+      text: penis + smrdis + "ení?",
     });
   }
 
