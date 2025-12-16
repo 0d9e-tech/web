@@ -170,7 +170,6 @@ export async function* handleTgUpdate(data: any) {
   }
 
   const chungus_balls_extended = "No tak kde je to tvoje";
-
   if (
     data.message.chat.id === MAIN_CHAT_ID &&
     !(data.message.message_id % 100000)
