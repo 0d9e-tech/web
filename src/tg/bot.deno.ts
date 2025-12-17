@@ -347,7 +347,7 @@ Be grateful for your abilities and your incredible success and your considerable
       !data.message.text.toLowerCase().includes(smrdis)) {
     await tgCall({
       chat_id: data.message.chat.id,
-      text: penis + smrdis + "ení?",
+      text: penis + " " + smrdis + "ení?",
     });
   }
 
