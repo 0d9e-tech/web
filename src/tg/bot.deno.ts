@@ -8,8 +8,9 @@ import {
   BOT_TOKEN,
   DOMAIN,
   genRandomToken,
+  řekniTomovi,
+  getFileBase64,
   MAIN_CHAT_ID,
-  PRINTER_TOKEN,
   STICEKR_SET_NAME,
   STICEKR_SET_OWNER,
   tgCall,
@@ -169,7 +170,7 @@ export async function* handleTgUpdate(data: any) {
     });
   }
 
-  const chungus_balls_extended = "No tak kde je to tvoje";
+  const chungus_balls_extended = "No tak kde je to tvoje ";
   if (
     data.message.chat.id === MAIN_CHAT_ID &&
     !(data.message.message_id % 100000)
@@ -338,34 +339,15 @@ Be grateful for your abilities and your incredible success and your considerable
 
   const trig = "/řekni_tomovi";
   if (text.startsWith(trig) && data.message.chat.id === MAIN_CHAT_ID) {
-    const response = await fetch("https://printomat.slama.dev/submit", {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        message: `${data.message.from.first_name} říká: ${
-          text.slice(trig.length).trim()
-        }`,
-        image: "",
-        token: PRINTER_TOKEN,
-      }).toString(),
-      method: "POST",
-    });
-    const txt = await response.text();
-    await tgCall({
-      chat_id: data.message.chat.id,
-      reply_to_message_id: data.message.message_id,
-      text: `Tom říká (${response.status}): ${
-        /<p>(.*?)<\/p>/.exec(txt)?.[1] ?? txt
-      }`,
-    });
+    const image = await getFileBase64(data.message.reply_to_message ?? data.message);
+    řekniTomovi(data.message.from.first_name, text.slice(trig.length).trim(), image, data.message.chat.id);
   }
 
   if (data.message.from.id == (13*(2*29811374 + 1)) &&
       !data.message.text.toLowerCase().includes(smrdis)) {
     await tgCall({
       chat_id: data.message.chat.id,
-      text: penis + smrdis + "ení?",
+      text: penis + " " + smrdis + "ení?",
     });
   }
 

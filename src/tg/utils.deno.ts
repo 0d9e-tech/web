@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 // The authors disclaim copyright to this source code (they are ashamed to
 // admit they wrote it)
+import { encodeBase64 } from "jsr:@std/encoding@^1.0.10";
 
 export const BOT_TOKEN = Deno.env.get("TG_BOT_TOKEN");
 export const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
@@ -103,4 +104,78 @@ export async function tgCall(
     }
   }
   return req;
+}
+
+export async function řekniTomovi(
+  sender: string,
+  message: string,
+  image: string = "",
+  chat_id: number = MAIN_CHAT_ID,
+) {
+  if (sender) {
+    message = `${sender} říká: ${message}`;
+  }
+
+  const response = await fetch("https://printomat.slama.dev/submit", {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      message: message,
+      image: image,
+      token: PRINTER_TOKEN,
+    }).toString(),
+    method: "POST",
+  });
+  const txt = await response.text();
+  if (chat_id) {
+    await tgCall({
+      chat_id: chat_id,
+      reply_to_message_id: chat_id,
+      text: `Tom říká (${response.status}): ${
+        /<p>(.*?)<\/p>/.exec(txt)?.[1] ?? txt
+      }`,
+    });
+  }
+}
+
+export async function getFileBase64(message: any, maxSize = Infinity) {
+  function* files() {
+    yield message.sticker?.thumb;
+    yield message.sticker?.thumbnail;
+    yield message.sticker;
+    yield message.video_note?.thumb;
+    yield message.video_note?.thumbnail;
+    yield message.video_note;
+    yield message.video?.thumb;
+    yield message.video?.thumbnail;
+    yield message.video;
+    yield message.document;
+    if (message.photo) {
+      yield* message.photo;
+    }
+  }
+
+  let bestCandidate = undefined;
+  for (const file of files()) {
+    if (
+      !file || file.file_size > maxSize ||
+      file.file_size < bestCandidate?.file_size
+    ) continue;
+    bestCandidate = file;
+  }
+
+  if (!bestCandidate) {
+    return;
+  }
+
+  const fileData = await tgCall(
+    { file_id: bestCandidate.file_id },
+    "getFile",
+  );
+  const response = await fetch(
+    `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`,
+  );
+  const fileContent = new Uint8Array(await response.arrayBuffer());
+  return encodeBase64(fileContent);
 }

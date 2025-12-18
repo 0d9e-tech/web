@@ -95,6 +95,6 @@ jobs:
           gh api \
             --method POST \
             /repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
-            -f 'body=Bruh, learn to code'
+            -f 'body=Bruh, learn to code: https://github.com/0d9e-tech/web/actions/runs/${{ github.run_id }}/job/${{ job.check_run_id }}#step:5:1'
           git reset --hard $before
           git push origin HEAD:${{ github.ref }} --force
