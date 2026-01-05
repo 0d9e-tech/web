@@ -20,7 +20,10 @@ RUN deno cache src/server.deno.ts
 COPY static static
 COPY --from=blog-builder /srv/jekyll/build/ ./static/blog
 
-ENV PATH "$PATH:/usr/games"
+ENV PATH="$PATH:/usr/games"
 COPY ./static/amogus.cow /usr/share/cowsay/cows
+
+ARG ACTOR
+RUN sed -i "s|<BUILD_ACTOR>|${ACTOR}|g" src/tg/init.deno.ts
 
 CMD ["sh", "-c", "deno run --unstable-cron --allow-all src/server.deno.ts 2>&1 | sed -u -e \"s/$TG_BOT_TOKEN/<REDACTED>/g\" >> static/persistent/log.txt"]
