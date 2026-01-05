@@ -544,7 +544,7 @@ Be grateful for your abilities and your incredible success and your considerable
         .concat(jail)
         .sort((a, b) => b.pos - a.pos)
     ) {
-      yield await tgCall({
+      await tgCall({
         chat_id: data.message.chat.id,
         text: "jail" in cha
           ? `${cha.char}jail time for ${data.message.from.first_name}`
