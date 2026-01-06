@@ -196,11 +196,11 @@ export async function* handleTgUpdate(data: any) {
     );
   }
 
+  const tits = text.toLowerCase().replaceAll("á", "a");
   if (
-    (text.toLowerCase().includes("pad") ||
-      text.toLowerCase().includes("pád")) &&
-    !text.toLowerCase().includes("vypada") &&
-    !text.toLowerCase().includes("vypadá")
+    tits.includes("pad") &&
+    !tits.includes("vypada") &&
+    !tits.includes("napad")
   ) {
     yield await tgCall(
       {
