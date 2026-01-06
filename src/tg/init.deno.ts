@@ -124,6 +124,19 @@ export function checkStickerReaction(stickerMessageId: number) {
 
 const hashOrigins = [{ lat: 50.1005803, lon: 14.3954325 }];
 
+const users: Record<string, string> = {
+  mvolfik: "Matěj",
+  chamik: "Kubík",
+  CloudMracek: "Honza",
+  marekmaskarinec: "Marek",
+  mariansam: "Marain",
+  Matuush: "Matúš",
+  ProkopRandacek: "Prokop",
+  WIPocket: "Adam",
+  topberry: "Honzak",
+  Ouolim: "Janek",
+};
+
 async function postGeohash() {
   const upcoming = new Date();
   upcoming.setHours(6);
@@ -242,6 +255,12 @@ export async function init() {
   );
 
   setTimeout(async () => {
+    const username = '<BUILD_ACTOR>';
+    const name = users[username] ?? "Nějakej impostor";
+    await tgCall({
+      chat_id: MAIN_CHAT_ID,
+      text: `${name} zase kazí všechnu zábavu`,
+    });
     await tgCall(
       {
         photo: `https://${DOMAIN}/startup.jpg?q=${bootId}`,

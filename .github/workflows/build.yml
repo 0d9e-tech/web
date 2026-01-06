@@ -55,13 +55,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        if: ${{ (github.ref == 'refs/heads/amogus' || github.ref == 'refs/heads/sus') && steps.lint.outcome == 'success' }}
+        if: ${{ steps.lint.outcome == 'success' }}
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ghcr.io/0d9e-tech/web:${{ github.ref == 'refs/heads/amogus' && 'staging' || 'latest' }}
+          tags: ghcr.io/0d9e-tech/web:${{ github.ref == 'refs/heads/sus' && 'latest' || github.ref == 'refs/heads/amogus' && 'staging' || 'dev' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            ACTOR=${{ github.actor }}
 
       - name: Deploy
         if: ${{ (github.ref == 'refs/heads/amogus' || github.ref == 'refs/heads/sus') && steps.lint.outcome == 'success' }}
