@@ -197,10 +197,10 @@ export async function* handleTgUpdate(data: any) {
   }
 
   if (
-    text.toLowerCase().includes("pad") ||
-    (text.toLowerCase().includes("pád") &&
-      !text.toLowerCase().includes("vypada") &&
-      !text.toLowerCase().includes("vypadá"))
+    (text.toLowerCase().includes("pad") ||
+      text.toLowerCase().includes("pád")) &&
+    !text.toLowerCase().includes("vypada") &&
+    !text.toLowerCase().includes("vypadá")
   ) {
     yield await tgCall(
       {
