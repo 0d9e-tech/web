@@ -196,6 +196,17 @@ export async function* handleTgUpdate(data: any) {
     );
   }
 
+  if (text.toLowerCase().includes("arch") && text.toLowerCase().includes("instal")) {
+    await tgCall({
+      chat_id: data.message.chat.id,
+      text: `Rád přeinstalovávám Arch Linux opakovaně
+
+Nic není hežčí pocit, než několikrát denně nainstalovat Arch Linux. Je to má droga. Ráno, když stanu, nalačno nainstaluji Arch Linux. Pak po snídani ještě jednou. Kolem oběda mám abstineční příznaky a tudíž Arch Linux nainstaluji ještě jednou. Pak s hlasy probírám, proč Arch Linux je king a proč Windows 10 a 11 špehuje na své uživatele. Ale po té mám znovu absťák - jdu hned nainstalovat Arch Linux. Není den, kdybych neinstaloval Arch.
+
+Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo zbudil ve tři ráno.`,
+    });
+  }
+
   const tits = text.toLowerCase().replaceAll("á", "a");
   if (
     tits.includes("pad") &&
