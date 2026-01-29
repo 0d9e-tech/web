@@ -255,7 +255,7 @@ export async function init() {
   );
 
   setTimeout(async () => {
-    const username = '<BUILD_ACTOR>';
+    const username = "<BUILD_ACTOR>";
     const name = users[username] ?? "Nějakej impostor";
     await tgCall({
       chat_id: MAIN_CHAT_ID,

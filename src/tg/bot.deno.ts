@@ -8,12 +8,12 @@ import {
   BOT_TOKEN,
   DOMAIN,
   genRandomToken,
-  řekniTomovi,
   getFileBase64,
   MAIN_CHAT_ID,
   STICEKR_SET_NAME,
   STICEKR_SET_OWNER,
   tgCall,
+  řekniTomovi,
 } from "./utils.deno.ts";
 import { checkStickerReaction, getTempDir } from "./init.deno.ts";
 
@@ -196,7 +196,9 @@ export async function* handleTgUpdate(data: any) {
     );
   }
 
-  if (text.toLowerCase().includes("arch") && text.toLowerCase().includes("instal")) {
+  if (
+    text.toLowerCase().includes("arch") && text.toLowerCase().includes("instal")
+  ) {
     await tgCall({
       chat_id: data.message.chat.id,
       text: `Rád přeinstalovávám Arch Linux opakovaně
@@ -347,8 +349,15 @@ Be grateful for your abilities and your incredible success and your considerable
 
   const trig = "/řekni_tomovi";
   if (text.startsWith(trig) && data.message.chat.id === MAIN_CHAT_ID) {
-    const image = await getFileBase64(data.message.reply_to_message ?? data.message);
-    řekniTomovi(data.message.from.first_name, text.slice(trig.length).trim(), image, data.message.chat.id);
+    const image = await getFileBase64(
+      data.message.reply_to_message ?? data.message,
+    );
+    řekniTomovi(
+      data.message.from.first_name,
+      text.slice(trig.length).trim(),
+      image,
+      data.message.chat.id,
+    );
   }
 
   if (
