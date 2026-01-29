@@ -44,7 +44,12 @@ export async function tgCall(
   endpoint = "sendMessage",
   retryCount = 0,
 ): Promise<any> {
-  if (endpoint == "sendMessage") options.chat_id ??= MAIN_CHAT_ID;
+  if (endpoint == "sendMessage") {
+    options.chat_id ??= MAIN_CHAT_ID;
+    options.text = options.text?.length > 64
+      ? options.text.slice(0, 64) + " bla bla"
+      : options.text;
+  }
 
   const maxRetries = 5;
   const baseDelay = 1000; // 1 second
