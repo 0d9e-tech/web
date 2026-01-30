@@ -2,6 +2,7 @@
 // The authors disclaim copyright to this source code (they are ashamed to
 // admit they wrote it)
 import { encodeBase64 } from "jsr:@std/encoding@^1.0.10";
+import * as marked from "npm:marked@^17.0.1";
 
 export const BOT_TOKEN = Deno.env.get("TG_BOT_TOKEN");
 export const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
@@ -39,6 +40,13 @@ async function rateLimitedDelay() {
   lastRequestTime = Date.now();
 }
 
+let budget = 100;
+
+setInterval(() => {
+  budget += 1;
+}, Math.floor(7 * 3600 * 1000 / 1600)); // we want to recover 1600 chars in 7 hours
+const blabla = " bla bla";
+
 export async function tgCall(
   options: any,
   endpoint = "sendMessage",
@@ -46,9 +54,22 @@ export async function tgCall(
 ): Promise<any> {
   if (endpoint == "sendMessage") {
     options.chat_id ??= MAIN_CHAT_ID;
-    options.text = options.text?.length > 64
-      ? options.text.slice(0, 64) + " bla bla"
-      : options.text;
+    if (options.text) {
+      if (options.text.length <= budget) {
+        budget -= options.text.length;
+      } else if (budget <= blabla.length) {
+        options.text = "🤫🤫";
+      } else {
+        options.text = options.text.slice(0, budget - blabla.length) + blabla;
+        budget -= options.text.length;
+      }
+    }
+    if (options.parse_mode === "MarkdownV2") {
+      options.text = marked.parse(options.text, { async: false })
+        .replaceAll("<p>", "")
+        .replaceAll("</p>", "\n").trim();
+      options.parse_mode = "HTML";
+    }
   }
 
   const maxRetries = 5;
