@@ -2,7 +2,7 @@
 // The authors disclaim copyright to this source code (they are ashamed to
 // admit they wrote it)
 import { encodeBase64 } from "jsr:@std/encoding@^1.0.10";
-import * as marked from "npm:marked";
+import * as marked from "npm:marked@^17.0.1";
 
 export const BOT_TOKEN = Deno.env.get("TG_BOT_TOKEN");
 export const MAIN_CHAT_ID = parseInt(Deno.env.get("TG_MAIN_CHAT_ID")!);
