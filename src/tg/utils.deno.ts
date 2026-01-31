@@ -47,11 +47,30 @@ setInterval(() => {
 }, Math.floor(7 * 3600 * 1000 / 1600)); // we want to recover 1600 chars in 7 hours
 const blabla = " bla bla";
 
+export const shutUpState = {
+  shut: false,
+  up: ([] as ((value: any) => void)[]),
+  timeout: -1,
+};
+
+export function unShutUp() {
+  if (!shutUpState.shut) return;
+  shutUpState.shut = false;
+  clearTimeout(shutUpState.timeout);
+  const { up } = shutUpState;
+  shutUpState.up = [];
+  for (let i = 0; i < up.length; i++) setTimeout(up[i], i * 1500);
+}
+
 export async function tgCall(
   options: any,
   endpoint = "sendMessage",
   retryCount = 0,
 ): Promise<any> {
+  if (shutUpState.shut) {
+    await new Promise((unShutUp) => shutUpState.up.push(unShutUp));
+  }
+
   if (endpoint == "sendMessage") {
     options.chat_id ??= MAIN_CHAT_ID;
     if (options.text) {

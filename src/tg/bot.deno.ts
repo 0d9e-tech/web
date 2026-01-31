@@ -10,9 +10,11 @@ import {
   genRandomToken,
   getFileBase64,
   MAIN_CHAT_ID,
+  shutUpState,
   STICEKR_SET_NAME,
   STICEKR_SET_OWNER,
   tgCall,
+  unShutUp,
   řekniTomovi,
 } from "./utils.deno.ts";
 import { checkStickerReaction, getTempDir } from "./init.deno.ts";
@@ -121,6 +123,13 @@ export async function* handleTgUpdate(data: any) {
     yield* handleVideoNote(data.message);
   }
 
+  if (
+    data.message.sticker?.file_unique_id == "AgADYBwAArJfyFM" &&
+    data.message.chat.id === MAIN_CHAT_ID
+  ) {
+    await unShutUp();
+  }
+
   const text = data?.message?.text ?? data?.message?.caption;
   if (typeof text !== "string") return;
 
@@ -159,6 +168,22 @@ export async function* handleTgUpdate(data: any) {
 
   if (text.startsWith("/sh ") && data.message.chat.id === MAIN_CHAT_ID) {
     yield* handleSh(data, text.slice(4));
+  }
+
+  if (text == "shut up" && data.message.chat.id === MAIN_CHAT_ID) {
+    await tgCall({
+      chat_id: data.message.chat.id,
+      message_id: data.message.message_id,
+      is_big: true,
+      reaction: [
+        {
+          type: "emoji",
+          emoji: "🌚",
+        },
+      ],
+    }, "setMessageReaction");
+    shutUpState.shut = true;
+    shutUpState.timeout = setTimeout(unShutUp, 3600_000);
   }
 
   if (text.includes("@yall") && data.message.chat.id === MAIN_CHAT_ID) {
