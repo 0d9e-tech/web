@@ -272,6 +272,17 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
     );
   }
 
+  if (text.toLowerCase().includes("pivo")) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        sticker:
+          "CAACAgQAAxUAAWmWrCivabPyBjn1B757zyX5bozPAALIGgAC9KbQU7NsWAAB81NdzToE",
+      },
+      "sendSticker",
+    );
+  }
+
   if (text.toLowerCase().includes("hrovno")) {
     await tgCall({
       chat_id: data.message.chat.id,
