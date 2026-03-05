@@ -277,5 +277,17 @@ export async function init() {
     });
   });
 
+  Deno.cron("Oh no Here comes one now", "0 19 * * *", () => {
+    if (previousMorningSticker && !previousMorningSticker.has_reaction) {
+      tgCall(
+        {
+          photo: `https://${DOMAIN}/gonnagetcha.jpg?q=${bootId}`,
+          chat_id: MAIN_CHAT_ID,
+        },
+        "sendPhoto",
+      );
+    }
+  });
+
   postGeohash();
 }
