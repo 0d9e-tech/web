@@ -263,7 +263,7 @@ export async function init() {
     });
     await tgCall(
       {
-        photo: `https://${DOMAIN}/startup.jpg?q=${bootId}`,
+        photo: `https://${DOMAIN}/startup.jpg?q=2${bootId}`,
         chat_id: MAIN_CHAT_ID,
       },
       "sendPhoto",
@@ -283,6 +283,7 @@ export async function init() {
         {
           photo: `https://${DOMAIN}/gonnagetcha.jpg?q=${bootId}`,
           chat_id: MAIN_CHAT_ID,
+          reply_to_message_id: previousMorningSticker.message_id,
         },
         "sendPhoto",
       );
