@@ -270,14 +270,14 @@ export async function init() {
     );
   }, 2000);
 
-  Deno.cron("tuuuuuuuuuu", "0 11 * * 4#1", () => {
+  Deno.cron("tuuuuuuuuuu", "0 12 * * 4#1", () => {
     tgCall({
       text:
         "TÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚÚ",
     });
   });
 
-  Deno.cron("Oh no Here comes one now", "0 19 * * *", () => {
+  Deno.cron("Oh no Here comes one now", "0 20 * * *", () => {
     if (previousMorningSticker && !previousMorningSticker.has_reaction) {
       tgCall(
         {
