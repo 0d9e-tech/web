@@ -21,6 +21,7 @@ COPY static static
 COPY --from=blog-builder /srv/jekyll/build/ ./static/blog
 
 ENV PATH="$PATH:/usr/games"
+ENV TZ=Europe/Prague
 COPY ./static/amogus.cow /usr/share/cowsay/cows
 
 ARG ACTOR
