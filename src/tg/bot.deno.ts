@@ -9,6 +9,7 @@ import {
   DOMAIN,
   genRandomToken,
   getFileBase64,
+  LLM_KEY,
   MAIN_CHAT_ID,
   shutUpState,
   STICEKR_SET_NAME,
@@ -31,6 +32,10 @@ export function get_video(index: number): Uint8Array | null {
   }
   return videoList[index];
 }
+
+// Message history for /analysis command
+const messageHistory: any[] = [];
+const MAX_HISTORY = 30;
 
 let sticekrs: any;
 export async function getSticekrCount(): Promise<number> {
@@ -132,6 +137,16 @@ export async function* handleTgUpdate(data: any) {
 
   const text = data?.message?.text ?? data?.message?.caption;
   if (typeof text !== "string") return;
+
+  // Store message for /analysis
+  if (data.message.chat.id === MAIN_CHAT_ID) {
+    messageHistory.push({
+      from: data.message.from?.first_name ?? "Anon",
+      text: text,
+      time: new Date().toISOString(),
+    });
+    if (messageHistory.length > MAX_HISTORY) messageHistory.shift();
+  }
 
   const reactions = [
     { t: ["sex"], r: "🤨" },
@@ -478,6 +493,15 @@ Be grateful for your abilities and your incredible success and your considerable
       chat_id: data.message.chat.id,
       text: "ඞ",
     });
+  }
+
+  if (
+    (text.toLowerCase().includes("analýza") ||
+      text.toLowerCase().includes("analysis") ||
+      text.toLowerCase().includes("kowalski")) &&
+    data.message.chat.id === MAIN_CHAT_ID
+  ) {
+    yield* handleAnalysis(data, 30);
   }
 
   if (text === "/kdo") {
@@ -866,6 +890,50 @@ async function* handleInlineQuery(data: any) {
       },
       "answerInlineQuery",
     );
+  }
+}
+
+async function* handleAnalysis(data: any, n: number) {
+  const recent = messageHistory.slice(-n);
+  const chatText = recent.map((m, i) => `#${i + 1} ${m.from}: ${m.text}`).join("\n\n");
+
+  const prompt = `Here is a transcript of ${n} recent messages from a group chat:
+
+---
+${chatText}
+---
+
+Analyze this conversation. What's going on? Who are the key players? Give your honest, slightly unhinged take on the dynamics. Be concise.`;
+
+  try {
+    const resp = await fetch("https://api.juan.bilej.monster/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${LLM_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "qwen3-27b",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1024,
+      }),
+    });
+
+    const json = await resp.json();
+    const reply = json.choices?.[0]?.message?.content ?? "juan ded";
+
+    yield await tgCall({
+      chat_id: data.message.chat.id,
+      reply_to_message_id: data.message.message_id,
+      parse_mode: "MarkdownV2",
+      text: reply.replaceAll("\\", "\\\\").replaceAll("`", "\\`"),
+    });
+  } catch (e: any) {
+    yield await tgCall({
+      chat_id: data.message.chat.id,
+      reply_to_message_id: data.message.message_id,
+      text: `${e.message}`,
+    });
   }
 }
 
