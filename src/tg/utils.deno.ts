@@ -10,6 +10,7 @@ export const DOMAIN = Deno.env.get("DOMAIN")!;
 export const STICEKR_SET_NAME = Deno.env.get("STICKER_SET_NAME")!;
 export const STICEKR_SET_OWNER = parseInt(Deno.env.get("STICKER_SET_OWNER")!);
 export const PRINTER_TOKEN = Deno.env.get("PRINTER_TOKEN")!;
+export const LLM_KEY = Deno.env.get("LLM_KEY")!;
 
 export const webhookPath = "/tg-webhook";
 
