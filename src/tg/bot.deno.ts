@@ -915,7 +915,8 @@ Analyze this conversation. What's going on? Who are the key players? Give your h
       body: JSON.stringify({
         model: "qwen3-27b",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 1024,
+        max_tokens: 2048,
+        chat_template_kwargs: { enable_thinking: false },
       }),
     });
 
@@ -923,7 +924,7 @@ Analyze this conversation. What's going on? Who are the key players? Give your h
 
     if (!resp.ok) {
       const errBody = await resp.text();
-      console.log(`Juan API error: ${errBody}`);
+      console.error(`Juan API error: ${errBody}`);
       yield await tgCall({
         chat_id: data.message.chat.id,
         reply_to_message_id: data.message.message_id,
@@ -933,46 +934,18 @@ Analyze this conversation. What's going on? Who are the key players? Give your h
     }
 
     const json = await resp.json();
-    const reply = json.choices?.[0]?.message?.content;
-    if (!reply) {
-      console.log(`Juan returned no content. Full response:`, JSON.stringify(json).slice(0, 500));
-      yield await tgCall({
-        chat_id: data.message.chat.id,
-        reply_to_message_id: data.message.message_id,
-        text: "juan ded (no content in response)",
-      });
-      return;
-    }
+    const msg = json.choices?.[0]?.message;
+    const text = (msg?.content || msg?.reasoning_content || "juan ded (no content)").slice(0, 4000);
 
-    // Truncate to Telegram limit (4096 chars) and escape for MarkdownV2
-    let text = reply.slice(0, 4000);
-    text = text.replaceAll("\\", "\\\\")
-      .replaceAll("`", "\\`")
-      .replaceAll("_", "\\_")
-      .replaceAll("*", "\\*")
-      .replaceAll("[", "\\[")
-      .replaceAll("(", "\\(")
-      .replaceAll(")", "\\)")
-      .replaceAll("~", "\\~")
-      .replaceAll(">", "\\>")
-      .replaceAll("#", "\\#")
-      .replaceAll("+", "\\+")
-      .replaceAll("-", "\\-")
-      .replaceAll("=", "\\=")
-      .replaceAll("|", "\\|")
-      .replaceAll("{", "\\{")
-      .replaceAll("}", "\\}")
-      .replaceAll("!", "\\!")
-      .replaceAll(".", "\\.");
+    console.log(`Juan reply: ${text.slice(0, 100)}...`);
 
     yield await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
-      parse_mode: "MarkdownV2",
       text,
     });
   } catch (e: any) {
-    console.log(`handleAnalysis error:`, e);
+    console.error(`handleAnalysis error:`, e);
     yield await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
