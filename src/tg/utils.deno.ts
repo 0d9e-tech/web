@@ -67,14 +67,15 @@ export async function tgCall(
   options: any,
   endpoint = "sendMessage",
   retryCount = 0,
+  skipBudget = false,
 ): Promise<any> {
-  if (shutUpState.shut) {
+  if (!skipBudget && shutUpState.shut) {
     await new Promise((unShutUp) => shutUpState.up.push(unShutUp));
   }
 
   if (endpoint == "sendMessage") {
     options.chat_id ??= MAIN_CHAT_ID;
-    if (options.text) {
+    if (options.text && !skipBudget) {
       if (options.text.length <= budget) {
         budget -= options.text.length;
       } else if (budget <= blabla.length) {

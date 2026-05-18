@@ -939,11 +939,38 @@ Analyze this conversation. What's going on? Who are the key players? Give your h
 
     console.log(`Juan reply: ${text.slice(0, 100)}...`);
 
-    yield await tgCall({
-      chat_id: data.message.chat.id,
-      reply_to_message_id: data.message.message_id,
-      text,
-    });
+    // Escape for MarkdownV2
+    const escaped = text.replaceAll("\\", "\\\\")
+      .replaceAll("`", "\\`")
+      .replaceAll("_", "\\_")
+      .replaceAll("*", "\\*")
+      .replaceAll("[", "\\[")
+      .replaceAll("]", "\\]")
+      .replaceAll("(", "\\(")
+      .replaceAll(")", "\\)")
+      .replaceAll("~", "\\~")
+      .replaceAll(">", "\\>")
+      .replaceAll("#", "\\#")
+      .replaceAll("+", "\\+")
+      .replaceAll("-", "\\-")
+      .replaceAll("=", "\\=")
+      .replaceAll("|", "\\|")
+      .replaceAll("{", "\\{")
+      .replaceAll("}", "\\}")
+      .replaceAll("!", "\\!")
+      .replaceAll(".", "\\.");
+
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        reply_to_message_id: data.message.message_id,
+        parse_mode: "MarkdownV2",
+        text: escaped,
+      },
+      "sendMessage",
+      0,
+      true, // skipBudget (bypass silencing & truncation)
+    );
   } catch (e: any) {
     console.error(`handleAnalysis error:`, e);
     yield await tgCall({
