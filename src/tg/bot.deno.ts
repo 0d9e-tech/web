@@ -919,20 +919,64 @@ Analyze this conversation. What's going on? Who are the key players? Give your h
       }),
     });
 
+    console.log(`Juan API response status: ${resp.status}`);
+
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      console.log(`Juan API error: ${errBody}`);
+      yield await tgCall({
+        chat_id: data.message.chat.id,
+        reply_to_message_id: data.message.message_id,
+        text: `juan ded (${resp.status}): ${errBody.slice(0, 200)}`,
+      });
+      return;
+    }
+
     const json = await resp.json();
-    const reply = json.choices?.[0]?.message?.content ?? "juan ded";
+    const reply = json.choices?.[0]?.message?.content;
+    if (!reply) {
+      console.log(`Juan returned no content. Full response:`, JSON.stringify(json).slice(0, 500));
+      yield await tgCall({
+        chat_id: data.message.chat.id,
+        reply_to_message_id: data.message.message_id,
+        text: "juan ded (no content in response)",
+      });
+      return;
+    }
+
+    // Truncate to Telegram limit (4096 chars) and escape for MarkdownV2
+    let text = reply.slice(0, 4000);
+    text = text.replaceAll("\\", "\\\\")
+      .replaceAll("`", "\\`")
+      .replaceAll("_", "\\_")
+      .replaceAll("*", "\\*")
+      .replaceAll("[", "\\[")
+      .replaceAll("(", "\\(")
+      .replaceAll(")", "\\)")
+      .replaceAll("~", "\\~")
+      .replaceAll(">", "\\>")
+      .replaceAll("#", "\\#")
+      .replaceAll("+", "\\+")
+      .replaceAll("-", "\\-")
+      .replaceAll("=", "\\=")
+      .replaceAll("|", "\\|")
+      .replaceAll("{", "\\{")
+      .replaceAll("}", "\\}")
+      .replaceAll("!", "\\!")
+      .replaceAll(".", "\\.");
 
     yield await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
       parse_mode: "MarkdownV2",
-      text: reply.replaceAll("\\", "\\\\").replaceAll("`", "\\`"),
+      text,
     });
   } catch (e: any) {
+    console.log(`handleAnalysis error:`, e);
     yield await tgCall({
       chat_id: data.message.chat.id,
       reply_to_message_id: data.message.message_id,
-      text: `${e.message}`,
+      text: `juan ded: ${e.message}`,
     });
   }
 }
