@@ -815,7 +815,7 @@ async function* reportProcessResult(
     reply_to_message_id,
     parse_mode: "MarkdownV2",
     text,
-  });
+  }, "sendMessage", 0, true);
 }
 
 async function handleCallbackQuery(data: any) {
