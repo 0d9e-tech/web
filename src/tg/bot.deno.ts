@@ -704,36 +704,22 @@ async function* handleSh(data: any, cmd: string) {
   const id = genRandomToken(32);
   await Deno.writeFile(
     `${getTempDir()}/${id}.sh`,
-    new TextEncoder().encode(cmd),
+    new TextEncoder().encode(
+      `exec 1>"${getTempDir()}/${id}.out" 2>&1
+${cmd}`,
+    ),
     {
       createNew: true,
     },
   );
 
-  const outFile = await Deno.open(`${getTempDir()}/${id}.out`, {
-    write: true,
-    createNew: true,
-  });
   const command = new Deno.Command("bash", {
     args: [`${getTempDir()}/${id}.sh`],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
+    stdin: "null",
+    stdout: "null",
+    stderr: "null",
   });
   const child = command.spawn();
-
-  let length = 0;
-  const writer = outFile.writable.getWriter();
-  const createWritable = () =>
-    new WritableStream({
-      write(chunk: Uint8Array) {
-        length += chunk.length;
-        writer.write(chunk);
-      },
-    });
-  child.stdout.pipeTo(createWritable());
-  child.stderr.pipeTo(createWritable());
-  child.stdin.close();
 
   const raceResult = await Promise.race([
     child.status,
@@ -742,7 +728,6 @@ async function* handleSh(data: any, cmd: string) {
 
   if (raceResult !== undefined) {
     yield* reportProcessResult(
-      length,
       id,
       data.message.message_id,
       raceResult.code,
@@ -785,7 +770,6 @@ async function* handleSh(data: any, cmd: string) {
     "editMessageReplyMarkup",
   );
   yield* reportProcessResult(
-    length,
     id,
     progressMessageResponse.result.message_id,
     status.code,
@@ -793,12 +777,12 @@ async function* handleSh(data: any, cmd: string) {
 }
 
 async function* reportProcessResult(
-  length: number,
   id: string,
   reply_to_message_id: number,
   exitCode: number,
 ) {
   const outPath = `${getTempDir()}/${id}.out`;
+  const { size: length } = await Deno.stat(outPath);
   const fileProc = new Deno.Command("file", {
     args: ["-ib", outPath],
     stdout: "piped",
