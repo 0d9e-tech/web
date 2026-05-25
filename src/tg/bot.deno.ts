@@ -218,7 +218,7 @@ export async function* handleTgUpdate(data: any) {
       "setMessageReaction",
     );
     shutUpState.shut = true;
-    shutUpState.timeout = setTimeout(unShutUp, 3600_000);
+    shutUpState.timeout = setTimeout(unShutUp, 3600_000) as unknown as number;
   }
 
   if (text.includes("@yall") && data.message.chat.id === MAIN_CHAT_ID) {
@@ -495,13 +495,10 @@ Be grateful for your abilities and your incredible success and your considerable
     });
   }
 
-  if (
-    (text.toLowerCase().includes("analýza") ||
-      text.toLowerCase().includes("analysis") ||
-      text.toLowerCase().includes("kowalski")) &&
+  if ( text.toLowerCase().includes("kowalski") &&
     data.message.chat.id === MAIN_CHAT_ID
   ) {
-    yield* handleAnalysis(data, 30);
+    yield* handleAnalysis(data, text, 30);
   }
 
   if (text === "/kdo") {
@@ -877,17 +874,26 @@ async function* handleInlineQuery(data: any) {
   }
 }
 
-async function* handleAnalysis(data: any, n: number) {
+async function* handleAnalysis(data: any, text: string, n: number) {
   const recent = messageHistory.slice(-n);
   const chatText = recent.map((m, i) => `#${i + 1} ${m.from}: ${m.text}`).join("\n\n");
 
-  const prompt = `Here is a transcript of ${n} recent messages from a group chat:
+  let prompt = `Uživatel spustil příkaz "kowalski". Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, taktický, mírně přehnaně sebevědomý a dramaticky zaujatý dešifrováním sociálního chaosu.
+
+Zde je přepis posledních ${n} zpráv ze skupinového chatu:
 
 ---
 ${chatText}
 ---
 
-Analyze this conversation. What's going on? Who are the key players? Give your honest, slightly unhinged take on the dynamics. Be concise.`;
+Analyzuj situaci jako Kowalski, který podává týmu hlášení z terénu. Přizpůsob se přesné energii chatu — pokud je chat chaotický, buď chaotický; pokud je suchý, buď suchý atd. Ať je to břitké, vtipné a všímavé, ne sentimentální.
+DŮLEŽITÉ:
+
+Napiš POUZE jeden odstavec. Buď stručný. Nevypadávej z role. Nevysvětluj vtipy. Zni tak, jako bys aktivně monitoroval probíhající operaci.`;
+
+  if (text.length > 10) {
+    prompt += `Uživatel zadal specifický dotaz: "${text}"`;
+  }
 
   try {
     const resp = await fetch("https://api.juan.bilej.monster/v1/chat/completions", {
