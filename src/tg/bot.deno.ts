@@ -889,7 +889,7 @@ ${chatText}
 Analyzuj situaci jako Kowalski, který podává týmu hlášení z terénu. Přizpůsob se přesné energii chatu — pokud je chat chaotický, buď chaotický; pokud je suchý, buď suchý atd. Ať je to břitké, vtipné a všímavé, ne sentimentální.
 DŮLEŽITÉ:
 
-Napiš POUZE jeden odstavec. Buď stručný. Nevypadávej z role. Nevysvětluj vtipy. Zni tak, jako bys aktivně monitoroval probíhající operaci.`;
+Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvětluj vtipy. Zni tak, jako bys aktivně monitoroval probíhající operaci.`;
 
   if (text.length > 10) {
     prompt += `Uživatel zadal specifický dotaz: "${text}"`;
