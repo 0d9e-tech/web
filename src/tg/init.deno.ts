@@ -29,6 +29,10 @@ let previousMorningSticker: {
 } | null = null;
 
 async function domeny() {
+  let resp2: any = fetch(
+    "https://api.open-meteo.com/v1/forecast?latitude=50.0721117&longitude=14.4052503&daily=temperature_2m_max&forecast_days=1&timezone=Europe/Prague",
+  );
+
   const resp = await fetch(
     "https://auctions-master.nic.cz/share/new_auctions.json",
   );
@@ -111,6 +115,19 @@ async function domeny() {
       sticker_file_id: sticekr,
       has_reaction: false,
     };
+  }
+
+  resp2 = await resp2;
+  const data2 = await resp2.json() as any;
+  if (data2.daily.temperature_2m_max[0] > 3e1) {
+    await tgCall(
+      {
+        chat_id: MAIN_CHAT_ID,
+        sticker:
+          "CAACAgQAAxUAAWo6WhwK68k09wt9ygABCHWwL5Zc1wACjiEAAnG90FEj5f-tjMk0UzwE",
+      },
+      "sendSticker",
+    );
   }
 }
 
