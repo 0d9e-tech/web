@@ -50,7 +50,7 @@ const blabla = " bla bla";
 
 export const shutUpState = {
   shut: false,
-  up: ([] as ((value: any) => void)[]),
+  up: [] as ((value: any) => void)[],
   timeout: -1,
 };
 

@@ -248,9 +248,11 @@ export async function* handleTgUpdate(data: any) {
     yield await tgCall(
       {
         chat_id: data.message.chat.id,
-        video_note: Math.random() < 0.5
+        video_note: Math.random() < 0.4
           ? "DQACAgQAAxkDAAM8ZWhhSjCXOdVCv7a8SkikjCDwEH4AAiQSAAKXPEhTuYZAGfYG_KwzBA"
-          : "DQACAgQAAx0CYbOIYwABAZOgaSF5TvqBIZtJAkkgCyJa5lPTpvUAAmkaAAKkFxBRMvxu2BMBa4c2BA",
+          : Math.random() < 0.5
+          ? "DQACAgQAAx0CYbOIYwABAZOgaSF5TvqBIZtJAkkgCyJa5lPTpvUAAmkaAAKkFxBRMvxu2BMBa4c2BA"
+          : "DQACAgQAAx0CYbOIYwABAeQHamS3gT0UutJXb9NKjSz3a6rIOD8AAn4hAAI9miFT94mag0zwGJA9BA",
       },
       "sendVideoNote",
     );
@@ -495,7 +497,8 @@ Be grateful for your abilities and your incredible success and your considerable
     });
   }
 
-  if ( text.toLowerCase().includes("kowalski") &&
+  if (
+    text.toLowerCase().includes("kowalski") &&
     data.message.chat.id === MAIN_CHAT_ID
   ) {
     yield* handleAnalysis(data, text, 30);
@@ -808,11 +811,16 @@ async function* reportProcessResult(
       `](https://${DOMAIN}/tgweb/${id}) \\(exit code ${exitCode}, ${length} bytes\\)\\. Set Content\\-Type with \`/settype ${id} mime/type\``;
   }
 
-  yield await tgCall({
-    reply_to_message_id,
-    parse_mode: "MarkdownV2",
-    text,
-  }, "sendMessage", 0, true);
+  yield await tgCall(
+    {
+      reply_to_message_id,
+      parse_mode: "MarkdownV2",
+      text,
+    },
+    "sendMessage",
+    0,
+    true,
+  );
 }
 
 async function handleCallbackQuery(data: any) {
@@ -876,9 +884,12 @@ async function* handleInlineQuery(data: any) {
 
 async function* handleAnalysis(data: any, text: string, n: number) {
   const recent = messageHistory.slice(-n);
-  const chatText = recent.map((m, i) => `#${i + 1} ${m.from}: ${m.text}`).join("\n\n");
+  const chatText = recent.map((m, i) => `#${i + 1} ${m.from}: ${m.text}`).join(
+    "\n\n",
+  );
 
-  let prompt = `Uživatel spustil příkaz "kowalski". Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, taktický, mírně přehnaně sebevědomý a dramaticky zaujatý dešifrováním sociálního chaosu.
+  let prompt =
+    `Uživatel spustil příkaz "kowalski". Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, taktický, mírně přehnaně sebevědomý a dramaticky zaujatý dešifrováním sociálního chaosu.
 
 Zde je přepis posledních ${n} zpráv ze skupinového chatu:
 
@@ -896,19 +907,22 @@ Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvě
   }
 
   try {
-    const resp = await fetch("https://api.juan.bilej.monster/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LLM_KEY}`,
+    const resp = await fetch(
+      "https://api.juan.bilej.monster/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LLM_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "qwen3-27b",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 2048,
+          chat_template_kwargs: { enable_thinking: false },
+        }),
       },
-      body: JSON.stringify({
-        model: "qwen3-27b",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 2048,
-        chat_template_kwargs: { enable_thinking: false },
-      }),
-    });
+    );
 
     console.log(`Juan API response status: ${resp.status}`);
 
@@ -925,7 +939,11 @@ Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvě
 
     const json = await resp.json();
     const msg = json.choices?.[0]?.message;
-    const text = (msg?.content || msg?.reasoning_content || "juan ded (no content)").slice(0, 4000);
+    const text =
+      (msg?.content || msg?.reasoning_content || "juan ded (no content)").slice(
+        0,
+        4000,
+      );
 
     console.log(`Juan reply: ${text.slice(0, 100)}...`);
 
