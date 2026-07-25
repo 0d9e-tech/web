@@ -1,7 +1,6 @@
 export const DINOSAUR_UID = "c838e77e8a599aba7d0b";
 
-const SPOTIFY_QUERY_URL =
-  "https://api-partner.spotify.com/pathfinder/v2/query";
+const SPOTIFY_QUERY_URL = "https://api-partner.spotify.com/pathfinder/v2/query";
 const SPOTIFY_AUTHORIZATION =
   "Bearer BQCWnlfP-dGQG8eRiFRsdx0zBI_OHkgbjJ_FymeSGZaTuqdiVhMfs_YXgmwt7BoY_psA-up3vuHxTO602Yzob5LoqclAVHt11FHGuPPRXkbbQjX7QrrUulzSbom06S4_6H1jPyQeOKA";
 const SPOTIFY_CLIENT_TOKEN =
@@ -30,7 +29,7 @@ export async function getDinosaurPlaycount(): Promise<number | null> {
     },
     referrer: "https://open.spotify.com/",
     body:
-      "{\"variables\":{\"uri\":\"spotify:artist:7wwkwCP5b0waa5bhpZCDPq\",\"locale\":\"\",\"preReleaseV2\":false},\"operationName\":\"queryArtistOverview\",\"extensions\":{\"persistedQuery\":{\"version\":1,\"sha256Hash\":\"7f86ff63e38c24973a2842b672abe44c910c1973978dc8a4a0cb648edef34527\"}}}",
+      '{"variables":{"uri":"spotify:artist:7wwkwCP5b0waa5bhpZCDPq","locale":"","preReleaseV2":false},"operationName":"queryArtistOverview","extensions":{"persistedQuery":{"version":1,"sha256Hash":"7f86ff63e38c24973a2842b672abe44c910c1973978dc8a4a0cb648edef34527"}}}',
     method: "POST",
     mode: "cors",
   });

@@ -317,7 +317,7 @@ export async function init() {
       dinosaurMillionAnnounced = true;
       await tgCall({
         chat_id: MAIN_CHAT_ID,
-        text: 'Dinosaur má milion na Spotify!!',
+        text: "Dinosaur má milion na Spotify!!",
       });
     }
   });
