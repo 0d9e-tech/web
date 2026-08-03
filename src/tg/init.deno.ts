@@ -119,7 +119,7 @@ async function domeny() {
 
   resp2 = await resp2;
   const data2 = await resp2.json() as any;
-  if (data2.daily.temperature_2m_max[0] > 3e1) {
+  while (data2.daily.temperature_2m_max[0] > 3e1) {
     await tgCall(
       {
         chat_id: MAIN_CHAT_ID,
@@ -128,6 +128,7 @@ async function domeny() {
       },
       "sendSticker",
     );
+    data2.daily.temperature_2m_max[0] -= 5e0;
   }
 }
 
