@@ -10,6 +10,13 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
+  <style>
+    @font-face {
+	  font-family: 'Inconsolata';
+	  font-weight: 700;
+	  src: url(https://0d9e.tech/font/Inconsolata-Bold.woff2) format('woff2');
+    }
+  </style>
   <defs
      id="defs16">
     <linearGradient
@@ -696,14 +703,14 @@
        id="g4269"
        transform="matrix(0.91132281,0,0,0.91132281,0.15520948,0.20635593)">
       <circle
-         style="display:none;fill:none;stroke-width:0.0352174"
+         style="fill:none;stroke-width:0.0352174;stroke:none"
          id="path432"
          cx="-2.5044932"
          cy="-1.7717655"
          transform="matrix(0,-1,-1,0,0,0)"
          r="2.194612" />
       <ellipse
-         style="display:none;fill:#000000;stroke-width:0.0957683"
+         style="stroke:none;fill:none;stroke-width:0.0957683"
          id="path418"
          cx="2.8336849"
          cy="-1.7169002"
@@ -748,7 +755,7 @@
          transform="matrix(0.02903289,0,0,0.02903289,-0.97149955,-0.23877189)" />
     </g>
     <circle
-       style="display:none;fill:none;stroke:#000000;stroke-width:0.05;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       style="fill:none;stroke:none;stroke-width:0.05;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="path438"
        cx="1.795511"
        cy="2.477406"

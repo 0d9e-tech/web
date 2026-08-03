@@ -10,7 +10,7 @@ FROM denoland/deno:debian
 WORKDIR /app
 
 RUN mkdir -p /usr/share/fonts/truetype/inconsolata
-COPY stuff/Inconsolata-Bold.otf /usr/share/fonts/truetype/inconsolata
+COPY static/font/Inconsolata-Bold.otf /usr/share/fonts/truetype/inconsolata
 
 RUN apt update && apt install -y file procps figlet fortune cowsay pslist inkscape imagemagick --no-install-recommends && rm -rf /var/lib/apt/lists/*
 

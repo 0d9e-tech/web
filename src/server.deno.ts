@@ -171,7 +171,7 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
     });
   }
 
-  const resp = await serveDir(e.request, { fsRoot: "static", quiet: true });
+  const resp = await serveDir(e.request, { fsRoot: "static", quiet: true, enableCors: true });
 
   if (![200, 301, 304].includes(resp.status)) {
     if (resp.status !== 404) console.error(resp);
