@@ -286,6 +286,17 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
       },
       "sendVideoNote",
     );
+
+    if (tits.includes("thai")) {
+      yield await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          video_note:
+            "DQACAgQAAx0CYbOIYwABAejBaoV6uXZN68Z_5jIQmIlZHVHQFI8AAtciAAK4sChQNJ107c9Rf6Y9BA",
+        },
+        "sendVideoNote",
+      );
+    }
   }
 
   if (text.toLowerCase().includes("fit")) {
