@@ -428,8 +428,11 @@ Be grateful for your abilities and your incredible success and your considerable
     }
   }
 
-  if (text.startsWith("/logo ") && data.message.chat.id === MAIN_CHAT_ID) {
-    yield* handleLogo(data, text.slice(6));
+  if (
+    (text.startsWith("/logo ") || text.startsWith("/kofo ")) &&
+    data.message.chat.id === MAIN_CHAT_ID
+  ) {
+    yield* handleLogo(data, text.slice(6), text.slice(1, 5));
   }
 
   const trig = "/řekni_tomovi";
@@ -671,10 +674,31 @@ Be grateful for your abilities and your incredible success and your considerable
 const decoder = new TextDecoder("utf8");
 
 const LOGO_TEMPLATE = await Deno.readTextFile("./static/logo.svg");
+const KOFO_TEMPLATE = await Deno.readTextFile("./static/kofo.svg");
 const LOGO_RENDER_SIZE = 500;
 
-async function generateLogos(text: string, filename: string) {
-  const texted = LOGO_TEMPLATE.replace("TEMPLATETEXT", text.trim());
+async function generateLogos(text: string, filename: string, logoType: string) {
+  const topText: string[] = text.split(" ");
+  const bottomText: string[] = [];
+  let currentCost = text.length;
+  while (topText.length) {
+    const upcomingCost = Math.abs(
+      topText.slice(0, -1).reduce((a, c) => a + c.length + 1, -1) -
+        (bottomText.reduce((a, c) => a + c.length + 1, 0) +
+          topText[topText.length - 1].length),
+    );
+    if (upcomingCost > currentCost) break;
+    bottomText.unshift(topText.pop() as string);
+    currentCost = upcomingCost;
+  }
+  const texted = logoType == "logo"
+    ? LOGO_TEMPLATE.replace("TEMPLATETEXT", text.trim())
+    : logoType == "kofo"
+    ? KOFO_TEMPLATE.replace("TEMPLATETEXT1", topText.join(" ")).replace(
+      "TEMPLATETEXT2",
+      bottomText.join(" "),
+    )
+    : null as never;
   await Deno.writeTextFile(`./static/persistent/logos/${filename}.svg`, texted);
   return (
     await new Deno.Command("inkscape", {
@@ -696,9 +720,9 @@ function slugify(text: string) {
     .replaceAll(/[^a-z0-9_-]/gi, (x) => "0x" + x.charCodeAt(0).toString(16));
 }
 
-async function* handleLogo(data: any, text: string) {
+async function* handleLogo(data: any, text: string, logoType: string) {
   const fn = `${slugify(text)}_${new Date().toISOString()}`;
-  if ((await generateLogos(text, fn)) === 0) {
+  if ((await generateLogos(text, fn, logoType)) === 0) {
     yield await tgCall(
       {
         chat_id: data.message.chat.id,
@@ -871,7 +895,7 @@ async function* handleInlineQuery(data: any) {
     `Logo from ${from.first_name} ${from.last_name} (@${from.username}): ${query}`,
   );
   const fn = `inline_${imageI++}_${slugify(query)}_${new Date().toISOString()}`;
-  if ((await generateLogos(query, fn)) === 0) {
+  if ((await generateLogos(query, fn, "logo")) === 0) {
     yield await tgCall(
       {
         inline_query_id,

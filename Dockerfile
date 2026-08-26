@@ -9,8 +9,9 @@ FROM denoland/deno:debian
 
 WORKDIR /app
 
-RUN mkdir -p /usr/share/fonts/truetype/inconsolata
+RUN mkdir -p /usr/share/fonts/truetype/desyrel
 COPY static/font/Inconsolata-Bold.otf /usr/share/fonts/truetype/inconsolata
+COPY static/font/Desyrel.ttf /usr/share/fonts/truetype/desyrel
 
 RUN apt update && apt install -y file procps figlet fortune cowsay pslist inkscape imagemagick --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
