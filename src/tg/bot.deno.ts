@@ -221,6 +221,20 @@ export async function* handleTgUpdate(data: any) {
     shutUpState.timeout = setTimeout(unShutUp, 3600_000) as unknown as number;
   }
 
+  for (
+    const kód of new Set(text.match(
+      /(?<!\d)(?:10[0-3]|20[0-8]|214|226|30[0-57-8]|4(?:[01]\d|2[0-689]|31|44|5[01]|9[5-9])|5(?:0[0-46-9]|1[01]|2[1-35]|30|99))(?!\d)/g,
+    ))
+  ) {
+    await tgCall(
+      {
+        photo: `https://http.cat/${kód}.jpg`,
+        chat_id: data.message.chat.id,
+      },
+      "sendPhoto",
+    );
+  }
+
   if (text.includes("@yall") && data.message.chat.id === MAIN_CHAT_ID) {
     yield await tgCall({
       chat_id: data.message.chat.id,
@@ -297,6 +311,17 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
         "sendVideoNote",
       );
     }
+  }
+
+  if (/dobr[eé] r[aá]no/i.test(text)) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        sticker:
+          "CAACAgQAAxUAAWq8lRpb48PzsDe2ik-ZSxSMs7ZAAAIiJAAC7Gr4UOC22T_fopCrPQQ",
+      },
+      "sendSticker",
+    );
   }
 
   if (text.toLowerCase().includes("fit")) {
