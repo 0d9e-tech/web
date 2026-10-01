@@ -13,7 +13,6 @@ import {
   webhookPath,
   webhookUrlToken,
 } from "./utils.deno.ts";
-import { getDinosaurPlaycount } from "../kruh.deno.ts";
 import { geohash } from "../geohash.deno.ts";
 import {
   getImageForPoint,
@@ -234,7 +233,6 @@ async function postGeohash() {
 const bootId = genRandomToken(16);
 
 let tempDir = "";
-let dinosaurMillionAnnounced = false;
 
 export function getTempDir() {
   return tempDir;
@@ -307,19 +305,6 @@ export async function init() {
         },
         "sendPhoto",
       );
-    }
-  });
-
-  Deno.cron("jakej je tvuj", "*/30 * * * *", async () => {
-    if (dinosaurMillionAnnounced) return;
-    const playcount = await getDinosaurPlaycount();
-    if (playcount === null) return;
-    if (playcount >= 1_000_000) {
-      dinosaurMillionAnnounced = true;
-      await tgCall({
-        chat_id: MAIN_CHAT_ID,
-        text: "Dinosaur má milion na Spotify!!",
-      });
     }
   });
 
