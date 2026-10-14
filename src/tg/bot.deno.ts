@@ -292,15 +292,14 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
     !tits.includes("vypada") &&
     !tits.includes("napad")
   ) {
-    yield await tgCall(
-      {
-        chat_id: data.message.chat.id,
-        video_note:
-          "DQACAgQAAxkDAAIHW2kohCvq14qxhtH5p9QUgIYGb8glAAJPHAACYmBJUZ-MT60sG7t5NgQ",
-      },
-      "sendVideoNote",
-    );
-
+    if (tits.includes("nepad")) {
+      yield await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          text: "❌❌❌ nepad!!",
+        }
+      )
+    } else
     if (tits.includes("thai")) {
       yield await tgCall(
         {
@@ -310,7 +309,16 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
         },
         "sendVideoNote",
       );
-    }
+    } else
+      yield await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          video_note:
+            "DQACAgQAAxkDAAIHW2kohCvq14qxhtH5p9QUgIYGb8glAAJPHAACYmBJUZ-MT60sG7t5NgQ",
+        },
+        "sendVideoNote",
+      );
+
   }
 
   if (/dobr[eé] r[aá]no/i.test(text)) {
