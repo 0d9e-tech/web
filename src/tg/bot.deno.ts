@@ -135,8 +135,13 @@ export async function* handleTgUpdate(data: any) {
     await unShutUp();
   }
 
-  const text = data?.message?.text ?? data?.message?.caption;
-  if (typeof text !== "string") return;
+  const text: string = data?.message?.text ?? data?.message?.caption ?? "";
+  const media = data.message.sticker
+    ? "sticker"
+    : data.message.photo
+    ? "photo"
+    : undefined;
+  if (!text && !media) return;
 
   // Store message for /analysis
   if (data.message.chat.id === MAIN_CHAT_ID) {
@@ -144,6 +149,8 @@ export async function* handleTgUpdate(data: any) {
       from: data.message.from?.first_name ?? "Anon",
       text: text,
       time: new Date().toISOString(),
+      media,
+      raw: data.message,
     });
     if (messageHistory.length > MAX_HISTORY) messageHistory.shift();
   }
@@ -950,14 +957,44 @@ async function* handleInlineQuery(data: any) {
   }
 }
 
+const MAX_IMAGES = 10;
+
+async function fetchMediaBase64(m: any): Promise<string | undefined> {
+  try {
+    if (m.sticker) {
+      // 128px thumb only: with the full message, getFileBase64 would also
+      // consider the whole sticker file (possibly a video), which the
+      // vision model cannot decode
+      const target = m.sticker.thumb ? { sticker: m.sticker.thumb } : m;
+      return await getFileBase64(target, 64 * 1024);
+    }
+    return await getFileBase64(m, 300 * 1024);
+  } catch (e: any) {
+    console.error(`media fetch error:`, e);
+    return undefined;
+  }
+}
+
 async function* handleAnalysis(data: any, text: string, n: number) {
   const recent = messageHistory.slice(-n);
-  const chatText = recent.map((m, i) => `#${i + 1} ${m.from}: ${m.text}`).join(
-    "\n\n",
+  const mediaMsgs = recent
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => m.media)
+    .slice(-MAX_IMAGES);
+  const images = await Promise.all(
+    mediaMsgs.map(({ m }) => fetchMediaBase64(m.raw)),
   );
+  const attached = images.filter((b): b is string => b !== undefined);
+
+  const chatText = recent
+    .map(
+      (m, i) =>
+        `#${i + 1} ${m.from}: ${m.text}${m.media ? ` [${m.media}]` : ""}`,
+    )
+    .join("\n\n");
 
   let prompt =
-    `Uživatel spustil příkaz "kowalski". Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, taktický, mírně přehnaně sebevědomý a dramaticky zaujatý dešifrováním sociálního chaosu.
+    `Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, mírně přehnaně sebevědomý, dramaticky zaujatý dešifrováním sociálního chaosu. Jsi pinguin z filmu, který se náhodou dívá na tento chat — o své software-povnosti si můžeš s nadsázkou všimnout, ale nejsi sysadmin: o infrastruktuře, kontejnerech a zabezpečení neradíš.
 
 Zde je přepis posledních ${n} zpráv ze skupinového chatu:
 
@@ -965,14 +1002,23 @@ Zde je přepis posledních ${n} zpráv ze skupinového chatu:
 ${chatText}
 ---
 
-Analyzuj situaci jako Kowalski, který podává týmu hlášení z terénu. Přizpůsob se přesné energii chatu — pokud je chat chaotický, buď chaotický; pokud je suchý, buď suchý atd. Ať je to břitké, vtipné a všímavé, ne sentimentální.
-DŮLEŽITÉ:
+Podávej hlášení z terénu. MAXIMÁLNĚ TŘI (3) VĚTY. Břitké, vtipné, všímavé, ne sentimentální. Přizpůsob se přesné energii chatu — chaotický chat zaslouží chaotické hlášení, suchý suchou poznámku.
 
-Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvětluj vtipy. Zni tak, jako bys aktivně monitoroval probíhající operaci.`;
+Pravidla:
+- Každé hlášení musí obsahovat alespoň jednu KONKRÉTNÍ věc z přepisu (jméno, citaci, absurditu). Žádná obecná taktická fráze místo obsahu.
+- Zakázané fráze: "přijímám signál", "držte pozici", "monitoruju", "taktický náskuh" — to zní jako call center, ne operace.
+- Volbu formy si udělej sám: jednou stačí jedna břitká věta, jindy suchý výčet, jindy jedna přesná observace.
+- [photo] a [sticker] v přepisu = obrázky přiložené k tomuto promptu ve stejném pořadí. Vidíš je — komentuj, co na nich je, jako součást hlášení. Nikdy neříkej, že nevidíš obrázek.
+- Nevysvětluj vtipy. Nevypadávej z role.`;
 
   if (text.length > 10) {
-    prompt += `Uživatel zadal specifický dotaz: "${text}"`;
+    prompt += `\n\nUživatel zadal specifický dotaz: "${text}"`;
   }
+
+  const imageParts = attached.map((b) => ({
+    type: "image_url",
+    image_url: { url: `data:image/jpeg;base64,${b}` },
+  }));
 
   try {
     const resp = await fetch(
@@ -985,7 +1031,12 @@ Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvě
         },
         body: JSON.stringify({
           model: "qwen3-27b",
-          messages: [{ role: "user", content: prompt }],
+          messages: [{
+            role: "user",
+            content: imageParts.length
+              ? [{ type: "text", text: prompt }, ...imageParts]
+              : prompt,
+          }],
           max_tokens: 2048,
           chat_template_kwargs: { enable_thinking: false },
         }),
