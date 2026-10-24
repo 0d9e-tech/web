@@ -961,11 +961,14 @@ const MAX_IMAGES = 10;
 
 async function fetchMediaBase64(m: any): Promise<string | undefined> {
   try {
-    // stickers: the 128px thumb is enough; photos: largest size under 300KB
-    const target = m.sticker?.thumb
-      ? { sticker: { thumb: m.sticker.thumb } }
-      : m;
-    return await getFileBase64(target, m.sticker ? 64 * 1024 : 300 * 1024);
+    if (m.sticker) {
+      // 128px thumb only: with the full message, getFileBase64 would also
+      // consider the whole sticker file (possibly a video), which the
+      // vision model cannot decode
+      const target = m.sticker.thumb ? { sticker: m.sticker.thumb } : m;
+      return await getFileBase64(target, 64 * 1024);
+    }
+    return await getFileBase64(m, 300 * 1024);
   } catch (e: any) {
     console.error(`media fetch error:`, e);
     return undefined;
@@ -991,7 +994,7 @@ async function* handleAnalysis(data: any, text: string, n: number) {
     .join("\n\n");
 
   let prompt =
-    `Uživatel spustil příkaz "kowalski". Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, taktický, mírně přehnaně sebevědomý a dramaticky zaujatý dešifrováním sociálního chaosu.
+    `Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, mírně přehnaně sebevědomý, dramaticky zaujatý dešifrováním sociálního chaosu. Jsi pinguin z filmu, který se náhodou dívá na tento chat — o své software-povnosti si můžeš s nadsázkou všimnout, ale nejsi sysadmin: o infrastruktuře, kontejnerech a zabezpečení neradíš.
 
 Zde je přepis posledních ${n} zpráv ze skupinového chatu:
 
@@ -999,18 +1002,17 @@ Zde je přepis posledních ${n} zpráv ze skupinového chatu:
 ${chatText}
 ---
 
-Analyzuj situaci jako Kowalski, který podává týmu hlášení z terénu. Přizpůsob se přesné energii chatu — pokud je chat chaotický, buď chaotický; pokud je suchý, buď suchý atd. Ať je to břitké, vtipné a všímavé, ne sentimentální.
-DŮLEŽITÉ:
+Podávej hlášení z terénu. MAXIMÁLNĚ TŘI (3) VĚTY. Břitké, vtipné, všímavé, ne sentimentální. Přizpůsob se přesné energii chatu — chaotický chat zaslouží chaotické hlášení, suchý suchou poznámku.
 
-Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvětluj vtipy. Zni tak, jako bys aktivně monitoroval probíhající operaci.`;
-
-  if (attached.length) {
-    prompt +=
-      `\n\nK přepisu je přiloženo ${attached.length} obrázků ze zpráv označených [photo] a [sticker], ve stejném pořadí.`;
-  }
+Pravidla:
+- Každé hlášení musí obsahovat alespoň jednu KONKRÉTNÍ věc z přepisu (jméno, citaci, absurditu). Žádná obecná taktická fráze místo obsahu.
+- Zakázané fráze: "přijímám signál", "držte pozici", "monitoruju", "taktický náskuh" — to zní jako call center, ne operace.
+- Volbu formy si udělej sám: jednou stačí jedna břitká věta, jindy suchý výčet, jindy jedna přesná observace.
+- [photo] a [sticker] v přepisu = obrázky přiložené k tomuto promptu ve stejném pořadí. Vidíš je — komentuj, co na nich je, jako součást hlášení. Nikdy neříkej, že nevidíš obrázek.
+- Nevysvětluj vtipy. Nevypadávej z role.`;
 
   if (text.length > 10) {
-    prompt += `Uživatel zadal specifický dotaz: "${text}"`;
+    prompt += `\n\nUživatel zadal specifický dotaz: "${text}"`;
   }
 
   const imageParts = attached.map((b) => ({
