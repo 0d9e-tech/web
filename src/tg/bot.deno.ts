@@ -135,8 +135,13 @@ export async function* handleTgUpdate(data: any) {
     await unShutUp();
   }
 
-  const text = data?.message?.text ?? data?.message?.caption;
-  if (typeof text !== "string") return;
+  const text: string = data?.message?.text ?? data?.message?.caption ?? "";
+  const media = data.message.sticker
+    ? "sticker"
+    : data.message.photo
+    ? "photo"
+    : undefined;
+  if (!text && !media) return;
 
   // Store message for /analysis
   if (data.message.chat.id === MAIN_CHAT_ID) {
@@ -144,6 +149,8 @@ export async function* handleTgUpdate(data: any) {
       from: data.message.from?.first_name ?? "Anon",
       text: text,
       time: new Date().toISOString(),
+      media,
+      raw: data.message,
     });
     if (messageHistory.length > MAX_HISTORY) messageHistory.shift();
   }
@@ -950,11 +957,38 @@ async function* handleInlineQuery(data: any) {
   }
 }
 
+const MAX_IMAGES = 10;
+
+async function fetchMediaBase64(m: any): Promise<string | undefined> {
+  try {
+    // stickers: the 128px thumb is enough; photos: largest size under 300KB
+    const target = m.sticker?.thumb
+      ? { sticker: { thumb: m.sticker.thumb } }
+      : m;
+    return await getFileBase64(target, m.sticker ? 64 * 1024 : 300 * 1024);
+  } catch (e: any) {
+    console.error(`media fetch error:`, e);
+    return undefined;
+  }
+}
+
 async function* handleAnalysis(data: any, text: string, n: number) {
   const recent = messageHistory.slice(-n);
-  const chatText = recent.map((m, i) => `#${i + 1} ${m.from}: ${m.text}`).join(
-    "\n\n",
+  const mediaMsgs = recent
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => m.media)
+    .slice(-MAX_IMAGES);
+  const images = await Promise.all(
+    mediaMsgs.map(({ m }) => fetchMediaBase64(m.raw)),
   );
+  const attached = images.filter((b): b is string => b !== undefined);
+
+  const chatText = recent
+    .map(
+      (m, i) =>
+        `#${i + 1} ${m.from}: ${m.text}${m.media ? ` [${m.media}]` : ""}`,
+    )
+    .join("\n\n");
 
   let prompt =
     `Uživatel spustil příkaz "kowalski". Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, taktický, mírně přehnaně sebevědomý a dramaticky zaujatý dešifrováním sociálního chaosu.
@@ -970,9 +1004,19 @@ DŮLEŽITÉ:
 
 Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvětluj vtipy. Zni tak, jako bys aktivně monitoroval probíhající operaci.`;
 
+  if (attached.length) {
+    prompt +=
+      `\n\nK přepisu je přiloženo ${attached.length} obrázků ze zpráv označených [photo] a [sticker], ve stejném pořadí.`;
+  }
+
   if (text.length > 10) {
     prompt += `Uživatel zadal specifický dotaz: "${text}"`;
   }
+
+  const imageParts = attached.map((b) => ({
+    type: "image_url",
+    image_url: { url: `data:image/jpeg;base64,${b}` },
+  }));
 
   try {
     const resp = await fetch(
@@ -985,7 +1029,12 @@ Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvě
         },
         body: JSON.stringify({
           model: "qwen3-27b",
-          messages: [{ role: "user", content: prompt }],
+          messages: [{
+            role: "user",
+            content: imageParts.length
+              ? [{ type: "text", text: prompt }, ...imageParts]
+              : prompt,
+          }],
           max_tokens: 2048,
           chat_template_kwargs: { enable_thinking: false },
         }),
