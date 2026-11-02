@@ -350,6 +350,17 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
     );
   }
 
+  if (text.toLowerCase().includes("\u0036\u0037")) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        video_note:
+          "DQACAgQAAxkDAAIIwGrohwPy_FdqKBNPClluL6bb3VNdAALqHgACc7tAUzi_aSqGHqCBPQQ",
+      },
+      "sendVideoNote",
+    );
+  }
+
   if (text.toLowerCase().includes("doslova")) {
     yield await tgCall(
       {
