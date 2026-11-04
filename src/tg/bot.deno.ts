@@ -339,6 +339,17 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
     );
   }
 
+  if (/distrib|p2p|peer/i.test(text)) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        sticker:
+          "CAACAgQAAxUAAWrqjUwmLSG4LBvsPPaa719r75ucAAK1IQACBGvBUlchkMJwUvl8PQQ",
+      },
+      "sendSticker",
+    );
+  }
+
   if (text.toLowerCase().includes("fit")) {
     yield await tgCall(
       {
