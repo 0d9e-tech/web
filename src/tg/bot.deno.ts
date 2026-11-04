@@ -1048,8 +1048,7 @@ Pravidla:
               ? [{ type: "text", text: prompt }, ...imageParts]
               : prompt,
           }],
-          max_tokens: 2048,
-          chat_template_kwargs: { enable_thinking: false },
+          chat_template_kwargs: { enable_thinking: true },
         }),
       },
     );
@@ -1069,11 +1068,7 @@ Pravidla:
 
     const json = await resp.json();
     const msg = json.choices?.[0]?.message;
-    const text =
-      (msg?.content || msg?.reasoning_content || "juan ded (no content)").slice(
-        0,
-        4000,
-      );
+    const text = (msg?.content || "juan ded (no content)").slice(0, 4000);
 
     console.log(`Juan reply: ${text.slice(0, 100)}...`);
 
