@@ -4,6 +4,7 @@
 import { serveDir } from "https://deno.land/std@0.190.0/http/file_server.ts";
 import {
   get_video,
+  getServiceFeedRssXml,
   getSticekr,
   getSticekrCount,
   handleTgWeb,
@@ -104,6 +105,14 @@ async function handleEvent(e: RequestEvent): Promise<Response | null> {
           "content-type": "text/html; charset=utf-8",
         },
       });
+  }
+
+  if (url.pathname === "/rss.xml") {
+    return new Response(getServiceFeedRssXml(), {
+      headers: {
+        "content-type": "application/rss+xml; charset=utf-8",
+      },
+    });
   }
 
   if (url.pathname.startsWith("/replication/")) {

@@ -22,6 +22,13 @@ import { checkStickerReaction, getTempDir } from "./init.deno.ts";
 
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.ChildProcess>();
+const serviceFeedItems: {
+  title: string;
+  description: string;
+  guid: string;
+  pubDate: string;
+}[] = [];
+const MAX_SERVICE_FEED_ITEMS = 100;
 
 // In-memory video list for kvh frontend
 const videoList: Uint8Array[] = [];
@@ -108,23 +115,75 @@ async function* handleVideoNote(message: any) {
 }
 
 function getServiceMessageText(message: any): string {
+  const event = getServiceFeedEvent(message);
+  return event?.description ?? "";
+}
+
+function getServiceFeedEvent(
+  message: any,
+): { title: string; description: string } | null {
   const actor = message.from?.first_name ?? "Someone";
 
   if (typeof message.new_chat_title === "string" && message.new_chat_title) {
-    return `${actor} renamed the group to "${message.new_chat_title}"`;
+    return {
+      title: "Group renamed",
+      description: `${actor} renamed the group to "${message.new_chat_title}"`,
+    };
   }
 
   const stickerSetName = message.new_chat_sticker_set ??
     message.set_chat_sticker_set;
   if (typeof stickerSetName === "string" && stickerSetName) {
-    return `${actor} added group sticker set "${stickerSetName}"`;
+    return {
+      title: "Sticker set added",
+      description: `${actor} added group sticker set "${stickerSetName}"`,
+    };
   }
 
   if (message.delete_chat_sticker_set === true) {
-    return `${actor} removed the group sticker set`;
+    return {
+      title: "Sticker set removed",
+      description: `${actor} removed the group sticker set`,
+    };
   }
 
-  return "";
+  return null;
+}
+
+function escapeXml(text: string): string {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function recordServiceFeedEvent(message: any) {
+  const event = getServiceFeedEvent(message);
+  if (!event) return;
+
+  const itemDate = typeof message?.date === "number"
+    ? new Date(message.date * 1000)
+    : new Date();
+  const item = {
+    ...event,
+    guid: crypto.randomUUID(),
+    pubDate: itemDate.toUTCString(),
+  };
+  serviceFeedItems.unshift(item);
+  if (serviceFeedItems.length > MAX_SERVICE_FEED_ITEMS) {
+    serviceFeedItems.length = MAX_SERVICE_FEED_ITEMS;
+  }
+}
+
+export function getServiceFeedRssXml(): string {
+  const items = serviceFeedItems.map((item) =>
+    `<item><title>${escapeXml(item.title)}</title><description>${
+      escapeXml(item.description)
+    }</description><guid>${item.guid}</guid><pubDate>${item.pubDate}</pubDate></item>`
+  ).join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>0d9e Telegram Service Feed</title><link>https://${DOMAIN}/rss.xml</link><description>Telegram service events: sticker set add/remove and group rename</description>${items}</channel></rss>`;
 }
 
 export async function* handleTgUpdate(data: any) {
@@ -139,6 +198,7 @@ export async function* handleTgUpdate(data: any) {
   if ("edited_message" in data) {
     data.message = data.edited_message;
   }
+  recordServiceFeedEvent(data?.message);
 
   // Handle video notes (circular videos)
   if (data?.message?.video_note) {
