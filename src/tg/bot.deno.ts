@@ -2,6 +2,7 @@
 // The authors disclaim copyright to this source code (they are ashamed to
 // admit they wrote it)
 
+import { encodeBase64 } from "jsr:@std/encoding@1/base64";
 import unidecode from "npm:unidecode@1.1.0";
 import { RequestEvent } from "../utils.deno.ts";
 import {
@@ -19,10 +20,12 @@ import {
   řekniTomovi,
 } from "./utils.deno.ts";
 import { checkStickerReaction, getTempDir } from "./init.deno.ts";
+import { addServiceFeedItem, recordServiceFeedEvent } from "./feed.deno.ts";
+
+export { getServiceFeedRssXml } from "./feed.deno.ts";
 
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.ChildProcess>();
-
 // In-memory video list for kvh frontend
 const videoList: Uint8Array[] = [];
 
@@ -107,6 +110,26 @@ async function* handleVideoNote(message: any) {
   }
 }
 
+function getServiceMessageText(message: any): string {
+  const event = getServiceFeedEvent(message);
+  return event?.description ?? "";
+}
+
+function getServiceFeedEvent(
+  message: any,
+): { title: string; description: string } | null {
+  const actor = message.from?.first_name ?? "Someone";
+
+  if (typeof message.new_chat_title === "string" && message.new_chat_title) {
+    return {
+      title: "Group renamed",
+      description: `${actor} renamed the group to "${message.new_chat_title}"`,
+    };
+  }
+
+  return null;
+}
+
 export async function* handleTgUpdate(data: any) {
   const { ok } = data;
   data.message ??= data.result;
@@ -119,6 +142,10 @@ export async function* handleTgUpdate(data: any) {
   if ("edited_message" in data) {
     data.message = data.edited_message;
   }
+  recordServiceFeedEvent(
+    getServiceFeedEvent(data?.message ?? {}),
+    data?.message?.date,
+  );
 
   // Handle video notes (circular videos)
   if (data?.message?.video_note) {
@@ -135,8 +162,14 @@ export async function* handleTgUpdate(data: any) {
     await unShutUp();
   }
 
-  const text = data?.message?.text ?? data?.message?.caption;
-  if (typeof text !== "string") return;
+  const text: string = data?.message?.text ?? data?.message?.caption ??
+    getServiceMessageText(data?.message ?? {});
+  const media = data.message.sticker
+    ? "sticker"
+    : data.message.photo
+    ? "photo"
+    : undefined;
+  if (!text && !media) return;
 
   // Store message for /analysis
   if (data.message.chat.id === MAIN_CHAT_ID) {
@@ -144,6 +177,8 @@ export async function* handleTgUpdate(data: any) {
       from: data.message.from?.first_name ?? "Anon",
       text: text,
       time: new Date().toISOString(),
+      media,
+      raw: data.message,
     });
     if (messageHistory.length > MAX_HISTORY) messageHistory.shift();
   }
@@ -292,21 +327,28 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
     !tits.includes("vypada") &&
     !tits.includes("napad")
   ) {
-    yield await tgCall(
-      {
-        chat_id: data.message.chat.id,
-        video_note:
-          "DQACAgQAAxkDAAIHW2kohCvq14qxhtH5p9QUgIYGb8glAAJPHAACYmBJUZ-MT60sG7t5NgQ",
-      },
-      "sendVideoNote",
-    );
-
-    if (tits.includes("thai")) {
+    if (tits.includes("nepad")) {
+      yield await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          text: "❌❌❌ nepad!!",
+        },
+      );
+    } else if (tits.includes("thai")) {
       yield await tgCall(
         {
           chat_id: data.message.chat.id,
           video_note:
             "DQACAgQAAx0CYbOIYwABAejBaoV6uXZN68Z_5jIQmIlZHVHQFI8AAtciAAK4sChQNJ107c9Rf6Y9BA",
+        },
+        "sendVideoNote",
+      );
+    } else {
+      yield await tgCall(
+        {
+          chat_id: data.message.chat.id,
+          video_note:
+            "DQACAgQAAxkDAAIHW2kohCvq14qxhtH5p9QUgIYGb8glAAJPHAACYmBJUZ-MT60sG7t5NgQ",
         },
         "sendVideoNote",
       );
@@ -324,12 +366,34 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
     );
   }
 
+  if (/distrib|p2p|peer/i.test(text)) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        sticker:
+          "CAACAgQAAxUAAWrqjUwmLSG4LBvsPPaa719r75ucAAK1IQACBGvBUlchkMJwUvl8PQQ",
+      },
+      "sendSticker",
+    );
+  }
+
   if (text.toLowerCase().includes("fit")) {
     yield await tgCall(
       {
         chat_id: data.message.chat.id,
         video_note:
           "DQACAgQAAx0CYbOIYwABAZoQaTb2QmdbNsgQ0pT0JOhLg6_GzNEAAnkfAAKUS7lRUArcMe2A3mA2BA",
+      },
+      "sendVideoNote",
+    );
+  }
+
+  if (text.toLowerCase().includes("\u0036\u0037")) {
+    yield await tgCall(
+      {
+        chat_id: data.message.chat.id,
+        video_note:
+          "DQACAgQAAxkDAAIIwGrohwPy_FdqKBNPClluL6bb3VNdAALqHgACc7tAUzi_aSqGHqCBPQQ",
       },
       "sendVideoNote",
     );
@@ -942,14 +1006,44 @@ async function* handleInlineQuery(data: any) {
   }
 }
 
+const MAX_IMAGES = 10;
+
+async function fetchMediaBase64(m: any): Promise<string | undefined> {
+  try {
+    if (m.sticker) {
+      // 128px thumb only: with the full message, getFileBase64 would also
+      // consider the whole sticker file (possibly a video), which the
+      // vision model cannot decode
+      const target = m.sticker.thumb ? { sticker: m.sticker.thumb } : m;
+      return await getFileBase64(target, 64 * 1024);
+    }
+    return await getFileBase64(m, 300 * 1024);
+  } catch (e: any) {
+    console.error(`media fetch error:`, e);
+    return undefined;
+  }
+}
+
 async function* handleAnalysis(data: any, text: string, n: number) {
   const recent = messageHistory.slice(-n);
-  const chatText = recent.map((m, i) => `#${i + 1} ${m.from}: ${m.text}`).join(
-    "\n\n",
+  const mediaMsgs = recent
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => m.media)
+    .slice(-MAX_IMAGES);
+  const images = await Promise.all(
+    mediaMsgs.map(({ m }) => fetchMediaBase64(m.raw)),
   );
+  const attached = images.filter((b): b is string => b !== undefined);
+
+  const chatText = recent
+    .map(
+      (m, i) =>
+        `#${i + 1} ${m.from}: ${m.text}${m.media ? ` [${m.media}]` : ""}`,
+    )
+    .join("\n\n");
 
   let prompt =
-    `Uživatel spustil příkaz "kowalski". Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, taktický, mírně přehnaně sebevědomý a dramaticky zaujatý dešifrováním sociálního chaosu.
+    `Jsi Kowalski z Tučňáků z Madagaskaru: hyperanalytický, mírně přehnaně sebevědomý, dramaticky zaujatý dešifrováním sociálního chaosu. Jsi pinguin z filmu, který se náhodou dívá na tento chat — o své software-povnosti si můžeš s nadsázkou všimnout, ale nejsi sysadmin: o infrastruktuře, kontejnerech a zabezpečení neradíš.
 
 Zde je přepis posledních ${n} zpráv ze skupinového chatu:
 
@@ -957,14 +1051,23 @@ Zde je přepis posledních ${n} zpráv ze skupinového chatu:
 ${chatText}
 ---
 
-Analyzuj situaci jako Kowalski, který podává týmu hlášení z terénu. Přizpůsob se přesné energii chatu — pokud je chat chaotický, buď chaotický; pokud je suchý, buď suchý atd. Ať je to břitké, vtipné a všímavé, ne sentimentální.
-DŮLEŽITÉ:
+Podávej hlášení z terénu. MAXIMÁLNĚ TŘI (3) VĚTY. Břitké, vtipné, všímavé, ne sentimentální. Přizpůsob se přesné energii chatu — chaotický chat zaslouží chaotické hlášení, suchý suchou poznámku.
 
-Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvětluj vtipy. Zni tak, jako bys aktivně monitoroval probíhající operaci.`;
+Pravidla:
+- Každé hlášení musí obsahovat alespoň jednu KONKRÉTNÍ věc z přepisu (jméno, citaci, absurditu). Žádná obecná taktická fráze místo obsahu.
+- Zakázané fráze: "přijímám signál", "držte pozici", "monitoruju", "taktický náskuh" — to zní jako call center, ne operace.
+- Volbu formy si udělej sám: jednou stačí jedna břitká věta, jindy suchý výčet, jindy jedna přesná observace.
+- [photo] a [sticker] v přepisu = obrázky přiložené k tomuto promptu ve stejném pořadí. Vidíš je — komentuj, co na nich je, jako součást hlášení. Nikdy neříkej, že nevidíš obrázek.
+- Nevysvětluj vtipy. Nevypadávej z role.`;
 
   if (text.length > 10) {
-    prompt += `Uživatel zadal specifický dotaz: "${text}"`;
+    prompt += `\n\nUživatel zadal specifický dotaz: "${text}"`;
   }
+
+  const imageParts = attached.map((b) => ({
+    type: "image_url",
+    image_url: { url: `data:image/jpeg;base64,${b}` },
+  }));
 
   try {
     const resp = await fetch(
@@ -977,9 +1080,13 @@ Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvě
         },
         body: JSON.stringify({
           model: "qwen3-27b",
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 2048,
-          chat_template_kwargs: { enable_thinking: false },
+          messages: [{
+            role: "user",
+            content: imageParts.length
+              ? [{ type: "text", text: prompt }, ...imageParts]
+              : prompt,
+          }],
+          chat_template_kwargs: { enable_thinking: true },
         }),
       },
     );
@@ -999,11 +1106,7 @@ Napiš MAXIMÁLNĚ TŘI (3) VĚTY. Buď stručný. Nevypadávej z role. Nevysvě
 
     const json = await resp.json();
     const msg = json.choices?.[0]?.message;
-    const text =
-      (msg?.content || msg?.reasoning_content || "juan ded (no content)").slice(
-        0,
-        4000,
-      );
+    const text = (msg?.content || "juan ded (no content)").slice(0, 4000);
 
     console.log(`Juan reply: ${text.slice(0, 100)}...`);
 
@@ -1111,6 +1214,12 @@ async function* sticekrThis(
   if (!data4.ok) {
     return "i ran out of error message ideas: " + JSON.stringify(data4);
   }
+  addServiceFeedItem(
+    "Sticker added",
+    `${orig_msg.from?.first_name ?? "Someone"} added a sticker to the pack`,
+    undefined,
+    encodeBase64(sticekr),
+  );
   const sticekrId = data4.result.stickers.at(-1).file_id;
   if (!sticekrId) return "i ran out of error message ideas the most";
 
