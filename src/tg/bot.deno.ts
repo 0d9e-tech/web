@@ -19,18 +19,12 @@ import {
   řekniTomovi,
 } from "./utils.deno.ts";
 import { checkStickerReaction, getTempDir } from "./init.deno.ts";
+import { addServiceFeedItem, recordServiceFeedEvent } from "./feed.deno.ts";
+
+export { getServiceFeedRssXml } from "./feed.deno.ts";
 
 const contentTypes = new Map<string, string>();
 const runningProcesses = new Map<string, Deno.ChildProcess>();
-const serviceFeedItems: {
-  title: string;
-  description: string;
-  guid: string;
-  pubDate: string;
-}[] = [];
-const MAX_SERVICE_FEED_ITEMS = 100;
-const SERVICE_FEED_STORAGE_PATH = "./static/persistent/rss-service-feed.json";
-
 // In-memory video list for kvh frontend
 const videoList: Uint8Array[] = [];
 
@@ -132,98 +126,8 @@ function getServiceFeedEvent(
     };
   }
 
-  const stickerSetName = message.new_chat_sticker_set ??
-    message.set_chat_sticker_set;
-  if (typeof stickerSetName === "string" && stickerSetName) {
-    return {
-      title: "Sticker set added",
-      description: `${actor} added group sticker set "${stickerSetName}"`,
-    };
-  }
-
-  if (message.delete_chat_sticker_set === true) {
-    return {
-      title: "Sticker set removed",
-      description: `${actor} removed the group sticker set`,
-    };
-  }
-
   return null;
 }
-
-function escapeXml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function loadServiceFeedItems() {
-  try {
-    const raw = Deno.readTextFileSync(SERVICE_FEED_STORAGE_PATH);
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return;
-
-    for (const item of parsed.slice(0, MAX_SERVICE_FEED_ITEMS)) {
-      if (
-        typeof item?.title === "string" &&
-        typeof item?.description === "string" &&
-        typeof item?.guid === "string" &&
-        typeof item?.pubDate === "string"
-      ) {
-        serviceFeedItems.push(item);
-      }
-    }
-  } catch (error: any) {
-    if (error?.name !== "NotFound") {
-      console.error("Failed to load RSS feed cache:", error);
-    }
-  }
-}
-
-function persistServiceFeedItems() {
-  try {
-    Deno.mkdirSync("./static/persistent", { recursive: true });
-    Deno.writeTextFileSync(
-      SERVICE_FEED_STORAGE_PATH,
-      JSON.stringify(serviceFeedItems),
-    );
-  } catch (error) {
-    console.error("Failed to persist RSS feed cache:", error);
-  }
-}
-
-function recordServiceFeedEvent(message: any) {
-  const event = getServiceFeedEvent(message);
-  if (!event) return;
-
-  const itemDate = typeof message?.date === "number"
-    ? new Date(message.date * 1000)
-    : new Date();
-  const item = {
-    ...event,
-    guid: crypto.randomUUID(),
-    pubDate: itemDate.toUTCString(),
-  };
-  serviceFeedItems.unshift(item);
-  if (serviceFeedItems.length > MAX_SERVICE_FEED_ITEMS) {
-    serviceFeedItems.length = MAX_SERVICE_FEED_ITEMS;
-  }
-  persistServiceFeedItems();
-}
-
-export function getServiceFeedRssXml(): string {
-  const items = serviceFeedItems.map((item) =>
-    `<item><title>${escapeXml(item.title)}</title><description>${
-      escapeXml(item.description)
-    }</description><guid>${item.guid}</guid><pubDate>${item.pubDate}</pubDate></item>`
-  ).join("");
-  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>0d9e Telegram Service Feed</title><link>https://${DOMAIN}/rss.xml</link><description>Telegram service events: sticker set add/remove and group rename</description>${items}</channel></rss>`;
-}
-
-loadServiceFeedItems();
 
 export async function* handleTgUpdate(data: any) {
   const { ok } = data;
@@ -237,7 +141,10 @@ export async function* handleTgUpdate(data: any) {
   if ("edited_message" in data) {
     data.message = data.edited_message;
   }
-  recordServiceFeedEvent(data?.message);
+  recordServiceFeedEvent(
+    getServiceFeedEvent(data?.message ?? {}),
+    data?.message?.date,
+  );
 
   // Handle video notes (circular videos)
   if (data?.message?.video_note) {
@@ -424,10 +331,9 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
         {
           chat_id: data.message.chat.id,
           text: "❌❌❌ nepad!!",
-        }
-      )
-    } else
-    if (tits.includes("thai")) {
+        },
+      );
+    } else if (tits.includes("thai")) {
       yield await tgCall(
         {
           chat_id: data.message.chat.id,
@@ -436,7 +342,7 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
         },
         "sendVideoNote",
       );
-    } else
+    } else {
       yield await tgCall(
         {
           chat_id: data.message.chat.id,
@@ -445,7 +351,7 @@ Dokážu odrecitovat celou instalaci obráceně i na zpamět, i kdyby mě někdo
         },
         "sendVideoNote",
       );
-
+    }
   }
 
   if (/dobr[eé] r[aá]no/i.test(text)) {
@@ -1307,6 +1213,10 @@ async function* sticekrThis(
   if (!data4.ok) {
     return "i ran out of error message ideas: " + JSON.stringify(data4);
   }
+  addServiceFeedItem(
+    "Sticker added",
+    `${orig_msg.from?.first_name ?? "Someone"} added a sticker to the pack`,
+  );
   const sticekrId = data4.result.stickers.at(-1).file_id;
   if (!sticekrId) return "i ran out of error message ideas the most";
 
