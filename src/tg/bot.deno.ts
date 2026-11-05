@@ -107,6 +107,26 @@ async function* handleVideoNote(message: any) {
   }
 }
 
+function getServiceMessageText(message: any): string {
+  const actor = message.from?.first_name ?? "Someone";
+
+  if (typeof message.new_chat_title === "string" && message.new_chat_title) {
+    return `${actor} renamed the group to "${message.new_chat_title}"`;
+  }
+
+  const stickerSetName = message.new_chat_sticker_set ??
+    message.set_chat_sticker_set;
+  if (typeof stickerSetName === "string" && stickerSetName) {
+    return `${actor} added group sticker set "${stickerSetName}"`;
+  }
+
+  if (message.delete_chat_sticker_set === true) {
+    return `${actor} removed the group sticker set`;
+  }
+
+  return "";
+}
+
 export async function* handleTgUpdate(data: any) {
   const { ok } = data;
   data.message ??= data.result;
@@ -135,7 +155,8 @@ export async function* handleTgUpdate(data: any) {
     await unShutUp();
   }
 
-  const text: string = data?.message?.text ?? data?.message?.caption ?? "";
+  const text: string = data?.message?.text ?? data?.message?.caption ??
+    getServiceMessageText(data?.message ?? {});
   const media = data.message.sticker
     ? "sticker"
     : data.message.photo
