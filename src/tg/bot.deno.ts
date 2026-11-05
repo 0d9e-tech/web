@@ -29,6 +29,7 @@ const serviceFeedItems: {
   pubDate: string;
 }[] = [];
 const MAX_SERVICE_FEED_ITEMS = 100;
+const SERVICE_FEED_STORAGE_PATH = "./static/persistent/rss-service-feed.json";
 
 // In-memory video list for kvh frontend
 const videoList: Uint8Array[] = [];
@@ -159,6 +160,41 @@ function escapeXml(text: string): string {
     .replaceAll("'", "&apos;");
 }
 
+function loadServiceFeedItems() {
+  try {
+    const raw = Deno.readTextFileSync(SERVICE_FEED_STORAGE_PATH);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+
+    for (const item of parsed.slice(0, MAX_SERVICE_FEED_ITEMS)) {
+      if (
+        typeof item?.title === "string" &&
+        typeof item?.description === "string" &&
+        typeof item?.guid === "string" &&
+        typeof item?.pubDate === "string"
+      ) {
+        serviceFeedItems.push(item);
+      }
+    }
+  } catch (error: any) {
+    if (error?.name !== "NotFound") {
+      console.error("Failed to load RSS feed cache:", error);
+    }
+  }
+}
+
+function persistServiceFeedItems() {
+  try {
+    Deno.mkdirSync("./static/persistent", { recursive: true });
+    Deno.writeTextFileSync(
+      SERVICE_FEED_STORAGE_PATH,
+      JSON.stringify(serviceFeedItems),
+    );
+  } catch (error) {
+    console.error("Failed to persist RSS feed cache:", error);
+  }
+}
+
 function recordServiceFeedEvent(message: any) {
   const event = getServiceFeedEvent(message);
   if (!event) return;
@@ -175,6 +211,7 @@ function recordServiceFeedEvent(message: any) {
   if (serviceFeedItems.length > MAX_SERVICE_FEED_ITEMS) {
     serviceFeedItems.length = MAX_SERVICE_FEED_ITEMS;
   }
+  persistServiceFeedItems();
 }
 
 export function getServiceFeedRssXml(): string {
@@ -185,6 +222,8 @@ export function getServiceFeedRssXml(): string {
   ).join("");
   return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>0d9e Telegram Service Feed</title><link>https://${DOMAIN}/rss.xml</link><description>Telegram service events: sticker set add/remove and group rename</description>${items}</channel></rss>`;
 }
+
+loadServiceFeedItems();
 
 export async function* handleTgUpdate(data: any) {
   const { ok } = data;
