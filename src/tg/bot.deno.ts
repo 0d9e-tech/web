@@ -2,6 +2,7 @@
 // The authors disclaim copyright to this source code (they are ashamed to
 // admit they wrote it)
 
+import { encodeBase64 } from "jsr:@std/encoding@1/base64";
 import unidecode from "npm:unidecode@1.1.0";
 import { RequestEvent } from "../utils.deno.ts";
 import {
@@ -1216,6 +1217,8 @@ async function* sticekrThis(
   addServiceFeedItem(
     "Sticker added",
     `${orig_msg.from?.first_name ?? "Someone"} added a sticker to the pack`,
+    undefined,
+    encodeBase64(sticekr),
   );
   const sticekrId = data4.result.stickers.at(-1).file_id;
   if (!sticekrId) return "i ran out of error message ideas the most";
