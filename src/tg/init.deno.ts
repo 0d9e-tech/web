@@ -13,6 +13,7 @@ import {
   webhookPath,
   webhookUrlToken,
 } from "./utils.deno.ts";
+import { addServiceFeedItem } from "./feed.deno.ts";
 import { geohash } from "../geohash.deno.ts";
 import {
   getImageForPoint,
@@ -86,6 +87,10 @@ async function domeny() {
     await tgCall(
       { sticker: previousMorningSticker.sticker_file_id },
       "deleteStickerFromSet",
+    );
+    addServiceFeedItem(
+      "Sticker removed",
+      "A sticker was removed from the pack",
     );
   }
 
