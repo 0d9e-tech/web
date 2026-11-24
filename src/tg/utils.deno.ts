@@ -88,6 +88,7 @@ export async function tgCall(
     if (options.parse_mode === "MarkdownV2") {
       options.text = marked.parse(options.text, { async: false })
         .replaceAll("<p>", "")
+        .replaceAll("<br>", "\n")
         .replaceAll("</p>", "\n").trim();
       options.parse_mode = "HTML";
     }
